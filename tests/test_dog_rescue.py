@@ -55,14 +55,17 @@ class TestMain:
         """Enter patches for all known checkers using ExitStack."""
         checkers = [
             "sites.all_dogs_matter.AllDogsMatterChecker.check",
+            "sites.amicii.AmiciiChecker.check",
             "sites.birmingham_dogs_home.BirminghamDogsHomeChecker.check",
             "sites.blue_cross.BlueCrossChecker.check",
             "sites.brighter_days.BrighterDaysChecker.check",
             "sites.cheltenham.CheltenhamChecker.check",
             "sites.cotswolds.CotswoldsChecker.check",
             "sites.dogs_trust.DogsTrustChecker.check",
+            "sites.east_midlands.EastMidlandsDogRescueChecker.check",
             "sites.forest_dog_rescue.ForestDogRescueChecker.check",
             "sites.gsdr.GsdrChecker.check",
+            "sites.happy_staffie.HappyStaffieChecker.check",
             "sites.jerry_green.JerryGreenChecker.check",
             "sites.many_tears.ManyTearsChecker.check",
             "sites.paws2rescue.Paws2RescueChecker.check",
@@ -71,10 +74,12 @@ class TestMain:
             "sites.rspca_brighton.RSPCABrightonChecker.check",
             "sites.rspca_leeds.RSPCALeedsChecker.check",
             "sites.scsr.SCSRChecker.check",
+            "sites.small_dog_rescue.SmallDogRescueChecker.check",
             "sites.south_east_dog_rescue.SouthEastDogRescueChecker.check",
             "sites.spaniel_aid.SpanielAidChecker.check",
             "sites.starfish.StarfishChecker.check",
             "sites.teckels.TeckelsChecker.check",
+            "sites.wild_acre.WildAcreChecker.check",
             "sites.wythall.WythallChecker.check",
         ]
         kwargs = {}

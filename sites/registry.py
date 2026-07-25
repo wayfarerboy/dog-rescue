@@ -12,6 +12,7 @@ from __future__ import annotations
 from pathlib import Path
 
 from sites.all_dogs_matter import AllDogsMatterChecker
+from sites.amicii import AmiciiChecker
 from sites.base import SiteChecker
 from sites.birch_hill import BirchHillChecker
 from sites.birmingham_dogs_home import BirminghamDogsHomeChecker
@@ -20,8 +21,11 @@ from sites.brighter_days import BrighterDaysChecker
 from sites.cheltenham import CheltenhamChecker
 from sites.cotswolds import CotswoldsChecker
 from sites.dogs_trust import DogsTrustChecker
+from sites.east_midlands import EastMidlandsDogRescueChecker
 from sites.forest_dog_rescue import ForestDogRescueChecker
 from sites.gsdr import GsdrChecker
+from sites.happy_staffie import HappyStaffieChecker
+from sites.small_dog_rescue import SmallDogRescueChecker
 from sites.jerry_green import JerryGreenChecker
 from sites.many_tears import ManyTearsChecker
 from sites.paws2rescue import Paws2RescueChecker
@@ -34,6 +38,7 @@ from sites.south_east_dog_rescue import SouthEastDogRescueChecker
 from sites.spaniel_aid import SpanielAidChecker
 from sites.starfish import StarfishChecker
 from sites.teckels import TeckelsChecker
+from sites.wild_acre import WildAcreChecker
 from sites.wythall import WythallChecker
 
 
@@ -62,12 +67,14 @@ def get_checkers(data_dir: str) -> list[SiteChecker]:
     max_dist = _load_max_distance(data_dir)
     return [
         AllDogsMatterChecker(data_dir),
+        AmiciiChecker(data_dir),
         BirminghamDogsHomeChecker(data_dir),
         # BirchHillChecker(data_dir),  # Cloudflare blocks automated access
         BrighterDaysChecker(data_dir),
         CheltenhamChecker(data_dir),
         CotswoldsChecker(data_dir),
         DogsTrustChecker(data_dir, max_distance_miles=max_dist),
+        EastMidlandsDogRescueChecker(data_dir),
         ForestDogRescueChecker(data_dir),
         JerryGreenChecker(data_dir),
         ManyTearsChecker(data_dir),
@@ -83,8 +90,11 @@ def get_checkers(data_dir: str) -> list[SiteChecker]:
         BlueCrossChecker(data_dir, "burford"),
         StarfishChecker(data_dir),
         TeckelsChecker(data_dir),
+        WildAcreChecker(data_dir),
         WythallChecker(data_dir),
         GsdrChecker(data_dir),
+        HappyStaffieChecker(data_dir),
+        SmallDogRescueChecker(data_dir),
     ]
 
 

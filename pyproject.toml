@@ -8,6 +8,9 @@ dependencies = [
     "cloudscraper>=1.2.71",
 ]
 
+[project.optional-dependencies]
+playwright = ["playwright>=1.45"]
+
 [dependency-groups]
 dev = [
     "pytest>=8.0",

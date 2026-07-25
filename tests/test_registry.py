@@ -13,6 +13,7 @@ def test_all_checkers_present() -> None:
 
     expected = sorted([
         "All Dogs Matter",
+        "Amicii Dog Rescue",
         "Birmingham Dogs Home",
         "Blue Cross Bromsgrove",
         "Blue Cross Burford",
@@ -20,8 +21,10 @@ def test_all_checkers_present() -> None:
         "Cheltenham Animal Shelter",
         "Cotswolds Dogs & Cats Home",
         "Dogs Trust",
+        "East Midlands Dog Rescue",
         "Forest Dog Rescue",
         "German Shepherd Rescue",
+        "Happy Staffie Rescue",
         "Jerry Green Dog Rescue",
         "Many Tears Rescue",
         "Paws2Rescue",
@@ -30,13 +33,15 @@ def test_all_checkers_present() -> None:
         "RSPCA Brighton",
         "RSPCA Leeds & Wakefield",
         "Second Chance Spaniel Rescue",
+        "Small Dog Rescue",
         "South East Dog Rescue",
         "Spaniel Aid",
         "Starfish Dog Rescue",
         "Teckels Animal Sanctuaries",
+        "Wild Acre Rescue",
         "Wythall Animal Sanctuary",
     ])
 
-    assert len(checkers) >= 22, f"Expected at least 23 checkers, got {len(checkers)}"
+    assert len(checkers) >= 27, f"Expected at least 27 checkers, got {len(checkers)}"
     missing = set(expected) ^ set(site_names)
     assert site_names == expected, f"Missing or unexpected checkers: {missing}"

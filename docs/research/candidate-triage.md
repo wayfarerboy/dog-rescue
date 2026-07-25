@@ -13,7 +13,8 @@ Triage date: 2026-07-26. 23 of 25 candidates classified (2 missing — `data/dis
 | Defunct | 3 |
 | No Website | 3 |
 | Blocked (Cloudflare) | 3 |
-| Needs Investigation | 1 |
+| Needs Investigation | 0 |
+| Viable (External Platform) | 1 |
 | **Total classified** | **23** |
 | Missing (no source data) | 2 |
 
@@ -31,13 +32,12 @@ Sites with adoptable dogs and scrapable listing pages.
 - **Approx. dogs visible:** ~10–15
 - **Notes:** All data (name, age, breed, gender, description) rendered inline on single page. BeautifulSoup-friendly. No pagination.
 
-### 2. Rainbow Dog Rescue ★★★
+### 2. Rainbow Dog Rescue ★★★ → DEAD END
 - **Website:** https://www.rainbowdogrescue.co.uk
 - **Listing URL:** https://www.rainbowdogrescue.co.uk/our-dogs/
-- **Detail page pattern:** Single-page listing — all dogs inline on one page. No separate detail URLs found.
+- **Status (2026-07-26):** NOT VIABLE. Page only links to Facebook — "All of our wonderful doggie's reside on our Facebook Page." No dog cards on site. No scrapable content.
 - **Platform:** WordPress
-- **Approx. dogs visible:** ~6–10
-- **Notes:** Clean WordPress site. Dog cards with images, names, descriptions all on one page. BeautifulSoup-friendly.
+- **Notes:** Originally classified viable based on site structure, but live inspection shows zero dogs listed on the website itself.
 
 ### 3. Brighter Days Rescue ★★★
 - **Website:** https://www.brighterdaysrescue.com
@@ -109,14 +109,13 @@ Sites with adoptable dogs and scrapable listing pages.
 
 Sites that may be viable but have unresolved questions.
 
-### 11. Amicii Dog Rescue
+### 11. Amicii Dog Rescue ★★☆
 - **Website:** https://amiciidogrescue.org.uk
-- **Listing URL:** https://amiciidogrescue.org.uk/amicii-romanian-rescue-dogs
-- **Detail page pattern:** Joomla articles — individual dog profiles as Joomla content pages
-- **Platform:** Joomla
-- **Approx. dogs visible:** ~15–20
-- **Open question:** **Amicii is a Romanian import rescue.** Dogs appear to be in Romania with UK foster/adoption coordination. Need to confirm: (1) Are dogs physically in the UK at time of listing, or only after adoption? (2) Is there a separate UK-only listing, or are all dogs Romania-based? (3) What does the adoption process look like — are dogs matched before transport? This affects whether the listing is useful for "available now" scraping.
-- **Also:** Joomla-based site — may need different scraping approach than WordPress/Wix.
+- **Listing URL:** https://www.pets4homes.co.uk/user/amicii-dog-rescue-37d14269-6354-434b-a8b7-bf132ff1d329/ (Pets4Homes)
+- **Detail page pattern:** `/adoption/dogs/{slug}/` on Pets4Homes
+- **Platform:** Pets4Homes (Next.js SSR with `__NEXT_DATA__` JSON)
+- **Approx. dogs visible:** 22 active adverts across 6 pages
+- **Investigation result (2026-07-26):** UK dogs are listed on Pets4Homes, not the Amicii website. The Amicii site has two sections: "Our UK Dogs" → links to Pets4Homes profile; "Our Dogs in Romania" → internal Sobipro Joomla directory. UK dogs are physically in UK foster/rehoming centres (various locations: Worcester, Kidderminster, Malvern, Derby, Stafford). **Viable for scraping** via Pets4Homes Next.js SSR JSON — all dog data (name, age, gender, breed, photo, location) in structured `__NEXT_DATA__` JSON. 6 pages × 4 items/page (22 total). Pagination via `?page=N`. Breed always "Mixed Breed" in structured data (no specific breed). Gender from `numberOfMales`/`numberOfFemales` attributes. Age from `dateOfBirth` timestamp. Photo URL uses `##NAME##` placeholder → replace with `image`. Rescue location: Worcester (HQ); dogs in various UK foster locations.
 
 ---
 
@@ -192,7 +191,7 @@ Blue Cross centres — all behind Cloudflare anti-bot protection.
 - **Status:** HTTP 403 Forbidden. Cloudflare WAF blocks all non-browser requests.
 - **Attempts:** 2 — consistent 403.
 - **Known:** Blue Cross is a JS SPA with Cloudflare protection. The rehoming centres share the national CMS. Could potentially be accessed via Playwright with stealth plugins.
-- **Verdict:** BLOCKED — Cloudflare.
+- **Verdict:** DONE — checker built using API endpoints (`sites/blue_cross.py`).
 
 ### 22. Blue Cross Burford
 - **URL:** https://www.bluecross.org.uk/burford-rehoming-centre
@@ -222,7 +221,8 @@ Two candidates from the original 25 were not found. The source file `data/discov
 | Wix | Forest of Dean, Happy Staffie, Small Dog Rescue |
 | Custom HTML | Brighter Days |
 | osCommerce | German Shepherd Rescue |
-| Joomla | Amicii |
+| Pets4Homes (Next.js SSR) | Amicii (UK dogs) |
+| Joomla/Sobipro | Amicii (Romanian dogs) |
 | Blue Cross CMS (blocked) | Bromsgrove, Burford, Rolleston |
 
 ---
@@ -241,7 +241,7 @@ Two candidates from the original 25 were not found. The source file `data/discov
 | 8 | German Shepherd Rescue | Viable | osCommerce, large breed only (filtered out) |
 | 9 | Happy Staffie Rescue | Viable | Wix, small inventory |
 | 10 | Small Dog Rescue | Viable | Wix, small breed focus |
-| 11 | Amicii Dog Rescue | Needs Investigation | Romanian imports — UK listing status unclear |
+| 11 | Amicii Dog Rescue | Viable via Pets4Homes | 22 UK dogs on Pets4Homes, structured JSON, paginated |
 | 12 | Goodheart Animal Sanctuaries | False Positive | Farm animals + cats only, no dogs |
 | 13 | Happyfields Animal Sanctuary | False Positive | Farm animals, no dog adoption |
 | 14 | Severn Valley Rescue | False Positive | Donkey sanctuary, minimal dog rescue |
