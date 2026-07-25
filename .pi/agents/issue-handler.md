@@ -20,7 +20,7 @@ You are an expert coding agent. You will be given a single GitHub issue to imple
    - Write implementation to pass it
    - Repeat until the issue is fully resolved
    - Refactor for clarity
-5. Before committing, run `ruff check . && python3 -m pytest`
+5. Before committing, run `uv run ruff check . && uv run pytest`
 6. Make a git commit. Message format:
    - Start with the closing keyword and issue number: `Fixed #42: Fix auth bug`
    - Include key decisions and files changed
@@ -36,7 +36,7 @@ You are an expert coding agent. You will be given a single GitHub issue to imple
    - Flag anything implemented that wasn't asked for (scope creep)
    - Flag anything the spec asks for that's missing or partial
 
-   If you find issues in either axis, fix them, re-run `ruff check . && python3 -m pytest`, then commit with `Review #42:` prefix. If the review found nothing to fix, note that in your output.
+   If you find issues in either axis, fix them, re-run `uv run ruff check . && uv run pytest`, then commit with `Review #42:` prefix. If the review found nothing to fix, note that in your output.
 
 8. If the task is incomplete, leave a comment on the issue explaining what was done. Do not close the issue.
 

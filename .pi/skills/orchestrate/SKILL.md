@@ -80,7 +80,7 @@ If the issue list is empty, stop and report.
 
 ### Step 2 — Implement & Review
 
-Each handler implements the issue using TDD, runs linting + tests (`ruff check . && python3 -m pytest`), then does a two-axis review — Standards (against this repo's documented coding standards) and Spec (against the issue body, which is the spec the ticket came from). After review, it commits.
+Each handler implements the issue using TDD, runs linting + tests (`uv run ruff check . && uv run pytest`), then does a two-axis review — Standards (against this repo's documented coding standards) and Spec (against the issue body, which is the spec the ticket came from). After review, it commits.
 
 **CRITICAL: Always use parallel mode with `worktree: true`, even for a single issue.** Never launch an issue-handler as a single agent — single-agent mode runs in the main working tree and will pollute it. Parallel mode with `worktree: true` isolates every handler in its own temporary worktree:
 
@@ -114,7 +114,7 @@ For each issue-handler that committed its branch:
 2. `git -C "$WT" merge "agent/{working-branch}/issue-{number}" --no-edit`
 3. Resolve any conflicts — read `$WT/path/to/file` (use the `read` tool with the `$WT` prefix), edit files in the worktree with the `edit`/`write` tools, then `git -C "$WT" add ...` and `git -C "$WT" commit ...`
 4. Remove any stray scratch/summary files the handler left behind: `rm -f "$WT/issue-{number}-result.md"` (check for other common names too)
-5. Run `cd "$WT" && ruff check . && python3 -m pytest` — fix failures inside the worktree before continuing
+5. Run `cd "$WT" && uv run ruff check . && uv run pytest` — fix failures inside the worktree before continuing
 6. `gh issue edit {number} --remove-label "ready-for-agent"`
 7. If `orchestrate.reviewLabel` is configured: ensure the label exists (`gh label list`, then `gh label create "{reviewLabel}"` if missing), then `gh issue edit {number} --add-label "{reviewLabel}"`
 

@@ -13,7 +13,7 @@ Autonomous issue orchestration for this repo.
 ## Prerequisites
 
 - GitHub CLI (`gh`) authenticated
-- Python 3.10+, `ruff`, `pytest`, `requests`, `beautifulsoup4` installed
+- Python 3.10+, `uv` installed. Run `uv sync` to install deps.
 - Issues must have the `ready-for-agent` label
 
 ## Branch strategy
