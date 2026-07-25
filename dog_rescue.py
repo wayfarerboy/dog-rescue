@@ -46,6 +46,7 @@ def main() -> None:
     from sites.many_tears import ManyTearsChecker
     from sites.pro_dogs_direct import ProDogsDirectChecker
     from sites.scsr import SCSRChecker
+    from sites.spaniel_aid import SpanielAidChecker
 
     checkers = [
         ManyTearsChecker(str(DATA_DIR)),
@@ -53,6 +54,7 @@ def main() -> None:
         DogsTrustChecker(str(DATA_DIR)),
         ProDogsDirectChecker(str(DATA_DIR)),
         JerryGreenChecker(str(DATA_DIR)),
+        SpanielAidChecker(str(DATA_DIR)),
     ]
 
     all_new: list[str] = []
