@@ -89,7 +89,7 @@ def get_checkers(data_dir: str) -> list[SiteChecker]:
         BlueCrossChecker(data_dir, "bromsgrove"),
         BlueCrossChecker(data_dir, "burford"),
         StarfishChecker(data_dir),
-        TeckelsChecker(data_dir),
+        # TeckelsChecker(data_dir),  # WAF blocks automated access
         WildAcreChecker(data_dir),
         WythallChecker(data_dir),
         GsdrChecker(data_dir),

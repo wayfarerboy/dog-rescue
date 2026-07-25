@@ -37,7 +37,7 @@ def test_all_checkers_present() -> None:
         "South East Dog Rescue",
         "Spaniel Aid",
         "Starfish Dog Rescue",
-        "Teckels Animal Sanctuaries",
+
         "Wild Acre Rescue",
         "Wythall Animal Sanctuary",
     ])

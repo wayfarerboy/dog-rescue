@@ -78,7 +78,6 @@ class TestMain:
             "sites.south_east_dog_rescue.SouthEastDogRescueChecker.check",
             "sites.spaniel_aid.SpanielAidChecker.check",
             "sites.starfish.StarfishChecker.check",
-            "sites.teckels.TeckelsChecker.check",
             "sites.wild_acre.WildAcreChecker.check",
             "sites.wythall.WythallChecker.check",
         ]
