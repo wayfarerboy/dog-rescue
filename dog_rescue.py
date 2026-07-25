@@ -68,6 +68,7 @@ def main() -> None:
     from sites.dogs_trust import DogsTrustChecker
     from sites.jerry_green import JerryGreenChecker
     from sites.many_tears import ManyTearsChecker
+    from sites.rspca_brighton import RSPCABrightonChecker
     from sites.scsr import SCSRChecker
     from sites.south_east_dog_rescue import SouthEastDogRescueChecker
 
@@ -78,6 +79,7 @@ def main() -> None:
         JerryGreenChecker(str(DATA_DIR)),
         SouthEastDogRescueChecker(str(DATA_DIR)),
         CotswoldsChecker(str(DATA_DIR)),
+        RSPCABrightonChecker(str(DATA_DIR)),
     ]
 
     text_sections: list[str] = []
