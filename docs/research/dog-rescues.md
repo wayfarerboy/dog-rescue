@@ -4,7 +4,9 @@ Research compiled 2026-07-24. Focus: female dogs, under 1 year (preferably under
 
 ## Summary
 
-6 strong candidates with server-rendered HTML and browsable listings, plus 1 with a REST API. 5 major sites (RSPCA, Blue Cross, Battersea, NAWT, Hope Rescue) are JS SPAs not easily scraped. Dogs Trust is already monitored.
+6 strong candidates with server-rendered HTML and browsable listings, plus 1 with a REST API. 5 major sites (RSPCA, Blue Cross, Battersea, NAWT, Hope Rescue) are JS SPAs. Dogs Trust is already monitored.
+
+**Update 2026-07-25:** 6 additional sites evaluated. RSPCA branch sites (Leeds, Brighton, Cotswolds) are independently scrapable unlike the national JS SPA.
 
 ---
 
@@ -128,11 +130,99 @@ Research compiled 2026-07-24. Focus: female dogs, under 1 year (preferably under
 6. **The Mayhew** — harder (gender missing from cards)
 
 ### Post-scrape filtering strategy
-Since no site offers age/gender/size filters server-side:
 - Scrape all available dogs from each site
 - Parse age text into months (e.g., "12 Week Old" → 3 months, "1 year 2 months" → 14 months)
 - Filter: gender == Female AND age_months <= 12 AND size in (Small, Medium)
 - Store in unified format for notification
+
+---
+
+---
+
+## Additional Sites (researched 2026-07-25)
+
+### South East Dog Rescue ★★★
+- **URL:** https://www.sedogrescue.co.uk/adopt-a-dog/
+- **Filters:** None on listing page. All dogs on one page.
+- **Rendering:** Server-rendered HTML. BeautifulSoup-compatible.
+- **Listing format:** Individual cards. Each shows: Name, Age, Gender, Breed.
+- **Data shown:** Breed ✓, Age ✓, Gender ✓, Location ✗ (Kent-based, some foster UK-wide per site text), Status ✓ (all dogs on this page are available)
+- **Notes:** Small inventory (6 dogs currently). Data quality is excellent — every card has breed, precise age, and gender. Includes small breeds (Terrier, Pomeranian x Husky, Cavachon, Shih Tzu). Adoption donation £400.
+
+### Raystede ★★☆
+- **URL:** https://www.raystede.org/adopt/dogs/
+- **Filters:** None visible. All dogs on one page.
+- **Rendering:** Server-rendered HTML (WordPress). BeautifulSoup-compatible.
+- **Listing format:** Individual cards. Each shows: Name, Age, Status ("Home Found", "Video" tag, etc.)
+- **Data shown:** Breed ✗ (not on cards), Age ✓ ("1 year 1 month", "11 months"), Gender ✗ (not on cards), Location ✗, Status ✓
+- **Notes:** ~14 dogs. Includes young dogs (Dolly, 11 months; Stanley, 1 year 1 month). Breed and gender require detail page scraping. Some dogs already marked "Home Found" — filter those out.
+
+### Cotswolds Dogs & Cats Home (CDCH) ★★☆
+- **URL:** https://cotswoldsdogsandcatshome.org.uk/adopt-a-dog/
+- **Filters:** None. Paginated sections (Available / Reserved).
+- **Rendering:** Server-rendered HTML. BeautifulSoup-compatible.
+- **Listing format:** Individual cards. Each shows: Name, Gender, Status (Available/Reserved), "Dog" label (species). Numbered cards.
+- **Data shown:** Breed ✗ (not on cards), Age ✗ (not on cards), Gender ✓, Location ✗, Status ✓
+- **Notes:** ~12 dogs available + reserved section. RSPCA Cotswolds branch. Breed and age require detail page scraping. High proportion of females in current inventory.
+
+### Paws2Rescue ★★☆
+- **URL:** https://paws2rescue.com/dogs/
+- **Filters:** Sex (Good Boy/Good Girl/All), Size (Small/Small-Medium/Medium/Medium-Large/Large), Location (Romania/England/Scotland/Wales)
+- **Rendering:** Server-rendered HTML (WordPress). BeautifulSoup-compatible.
+- **Listing format:** Individual cards. Each shows: Sex icon + Size tag + Location tag. No name, no breed, no age visible on cards.
+- **Data shown:** Breed ✗, Age ✗, Gender ✓ (via Good Boy/Good Girl), Location ✓ (country-level), Status ✗
+- **Notes:** Large inventory (~35 dogs). **Most dogs are in Romania** — imported rescue. Sex + size filters are useful but lack of age and breed on cards means detail page scraping is essential. Good for finding small/medium females if you're willing to scrape detail pages.
+
+### RSPCA Leeds & Wakefield ★★☆
+- **URL:** https://www.rspcaleedsandwakefield.org.uk/dogs/
+- **Filters:** None.
+- **Rendering:** Server-rendered HTML. BeautifulSoup-compatible.
+- **Listing format:** Individual cards. Each shows: Name, Age, Gender.
+- **Data shown:** Breed ✗ (not on cards), Age ✓, Gender ✓, Location ✗, Status ✓
+- **Notes:** Very small inventory (5 dogs currently). Good data format. RSPCA branch — independent from the national JS SPA. Breed missing from cards.
+
+### RSPCA Brighton & Heart of Sussex ★★☆
+- **URL:** https://rspca-brighton.org.uk/animals/dogs/
+- **Filters:** None.
+- **Rendering:** Server-rendered HTML (WordPress). BeautifulSoup-compatible.
+- **Listing format:** Individual cards. Each shows: Name, Status ("New arrival", "Reserved", "No more applications being taken").
+- **Data shown:** Breed ✗ (not on cards), Age ✗ (not on cards), Gender ✗ (not on cards), Location ✗, Status ✓
+- **Notes:** ~20 dogs — best inventory of the RSPCA branches checked. But cards show ONLY name and status. All breed/age/gender data requires detail page scraping. Adoption fee £300 (£350 for puppies).
+
+---
+
+### Newly Evaluated & Excluded
+
+| Site | Reason |
+|------|--------|
+| **Blue Cross** (bluecross.org.uk) | Reconfirmed JS SPA. All direct dog-listing URLs return 404. Species selector at /rehome-pet works but dog listings require client-side JS navigation. **Playwright-able** if worth the effort. |
+| **Hope Rescue** (hoperescue.org.uk) | JS category selector at /dogs-for-adoption. All /dogs/, /adopt/, /rehome/ etc. 301-redirect back to /dogs-for-adoption. No server-rendered dog listing pages found. **Playwright needed** to click through categories. |
+| **RSPCA national** (rspca.org.uk/findapet) | Reconfirmed JS SPA. Search form renders but results are JS-driven. **Playwright needed.** RSPCA branch sites (Leeds, Brighton, Cotswolds) are independent WordPress sites and ARE scrapable. |
+| **Border Collie Trust GB** (bordercollietrustgb.org.uk) | /dogs.html and all listing URLs return 404. Site appears to have no public dog listings — just info pages and a photo gallery of kennels. |
+| **CAESSR** (caessr.org.uk) | Spaniel rescue. All listing URLs return 404. Homepage shows one "Featured Dog" but no browsable listings found. |
+| **Greyhound Trust** | Excluded — greyhounds are large dogs (outside small/medium focus). |
+| **Irish Retriever Rescue** | Excluded — retrievers are medium/large. |
+| **Pawz For Thought** | /dogs/ returns page with no dog cards — just contact info and a "Find the Perfect Pooch" blurb. No public listings. |
+| **Finding Furever Homes** | /dogs/ page says "Sorry, no listings were found." Empty inventory. |
+| **Ruff Start Rescue** | /dogs/ is a blog post, not a listing page. |
+| **Animal Rescue and Care** | /dogs/ is a contact/adoption form, not a listing page. |
+| **Pawprints Dog Rescue** | All listing URLs 404. |
+| **Starlight Trust** | /dogs/ 404. |
+| **Oakwood Dog Rescue** | 301 redirect but destination also 404. |
+| **DogsBlog.com** | Timed out (20s). Likely defunct or JS-heavy. |
+| **Pug Rescue UK** | Domain not resolving (DNS error). |
+| **French Bulldog Saviours** | Domain not resolving (DNS error). |
+
+---
+
+## RSPCA Branch Strategy
+
+RSPCA branches run independent WordPress sites that are often server-rendered and scrapable, unlike the national JS SPA. Confirmed scrapable:
+- RSPCA Leeds & Wakefield (rspcaleedsandwakefield.org.uk/dogs/)
+- RSPCA Brighton (rspca-brighton.org.uk/animals/dogs/)
+- CDCH / RSPCA Cotswolds (cotswoldsdogsandcatshome.org.uk/adopt-a-dog/)
+
+Other branches may be discoverable via RSPCA's branch finder at rspca.org.uk.
 
 ---
 
@@ -154,10 +244,27 @@ Since no site offers age/gender/size filters server-side:
 - Dropped: Stokenchurch Dog Rescue — only rehomed dogs shown
 - Dropped: Underdog International — timed out, likely SPA
 - Dropped: Labrador Retriever Rescue SE — requires application form, only 5 public dogs
+- Kept: South East Dog Rescue (sedogrescue.co.uk/adopt-a-dog/) — ★★★ all data on cards, small inventory
+- Kept: Raystede (raystede.org/adopt/dogs/) — ★★☆ age on cards, breed/gender on detail pages
+- Kept: Cotswolds Dogs & Cats Home (cotswoldsdogsandcatshome.org.uk/adopt-a-dog/) — ★★☆ gender on cards, age/breed on detail pages
+- Kept: Paws2Rescue (paws2rescue.com/dogs/) — ★★☆ sex/size/location filters, mostly Romanian imports, no age/breed on cards
+- Kept: RSPCA Leeds & Wakefield (rspcaleedsandwakefield.org.uk/dogs/) — ★★☆ independent RSPCA branch, small inventory
+- Kept: RSPCA Brighton (rspca-brighton.org.uk/animals/dogs/) — ★★☆ independent RSPCA branch, best branch inventory (~20 dogs)
+- Dropped: Blue Cross — JS SPA (Playwright-able but adds complexity)
+- Dropped: Hope Rescue — JS category selector, no server-rendered listings
+- Dropped: Border Collie Trust GB — no public dog listings
+- Dropped: CAESSR — no browsable listings
+- Dropped: Greyhound Trust — large breed only
+- Dropped: Irish Retriever Rescue — medium/large breed
+- Dropped: Pawz For Thought — no public listings
+- Dropped: Finding Furever Homes — empty inventory
+- Dropped: DogsBlog.com — timed out, likely defunct
+- Dropped: Pug Rescue UK, French Bulldog Saviours — domains not resolving
+- Dropped: Multiple other rescues — dead domains or no dog listings
 
 ## Gaps
 
-- **Age/gender filtering:** None of the discovered sites offer server-side age or gender filtering. Post-scrape Python filtering is the only option.
+- **Age/gender filtering:** No newly discovered site offers server-side age or gender filtering beyond those already documented.
 - **RSPCA API:** The Liferay portlet response was "Undeployed" — the findapet API may have moved to a different endpoint. Worth investigating via browser DevTools on the live site.
 - **Blue Cross:** May be scrape-able if the JS SPA uses a JSON API. The 403 from curl suggests Cloudflare Bot Management. Playwright with stealth plugins might work.
 - **Woodgreen ACF fields:** The WP REST API returns ACF custom fields as empty arrays in listing view. Individual pet endpoints at `/wp-json/wp/v2/pets/{id}` may contain `acf` data with age/gender.
