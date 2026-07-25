@@ -63,33 +63,41 @@ def format_html(results: list[tuple[str, list[Dog]]]) -> str:
             photo_html = _photo_tag(d.photo_url)
 
             cards.append(
-                '<div style="border:1px solid #e0e0e0; border-radius:8px; '
-                'padding:14px; margin-bottom:12px; font-family:-apple-system,'
-                "BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif\">"
-                '<table cellpadding="0" cellspacing="0" border="0" width="100%"><tr>'
-                f'<td width="56" style="vertical-align:top">{photo_html}</td>'
-                '<td style="vertical-align:top;padding-left:12px">'
-                f'<div style="font-size:16px;font-weight:bold;color:#222;'
-                f'margin-bottom:3px">{name}</div>'
-                f'<div style="font-size:13px;color:#555;line-height:1.5">'
-                f'{breed} &middot; {gender} &middot; {age}</div>'
-                f'<div style="font-size:12px;color:#888;margin-top:4px">'
-                f'📍 {location}</div>'
-                f'<a href="{url}" style="display:inline-block;margin-top:8px;'
-                f'font-size:12px;font-weight:600;color:#1a73e8;'
-                f'text-decoration:none;border:1px solid #1a73e8;'
-                f'border-radius:4px;padding:5px 12px">View profile →</a>'
-                '</td></tr></table></div>'
+                '<div style="background:#fff;border:1px solid #e0e0e0;'
+                'border-radius:10px;overflow:hidden;display:flex;'
+                'margin-bottom:14px;transition:box-shadow .15s" '
+                'onmouseover="this.style.boxShadow=\'0 2px 12px rgba(0,0,0,0.08)\'" '
+                'onmouseout="this.style.boxShadow=\'none\'">'
+                f'<div style="width:100px;min-height:100px;background:#f0ede8;'
+                f'flex-shrink:0;display:flex;align-items:center;'
+                f'justify-content:center;font-size:40px">{photo_html}</div>'
+                '<div style="padding:14px 16px;flex:1;min-width:0">'
+                f'<div style="font-size:16px;font-weight:700;color:#222;'
+                f'margin-bottom:2px">{name}</div>'
+                f'<div style="font-size:13px;color:#555;margin-bottom:1px">'
+                f'{breed or "&mdash;"}</div>'
+                f'<div style="font-size:12px;color:#888;margin-bottom:6px">'
+                f'{gender or "&mdash;"} &middot; {age or "&mdash;"}</div>'
+                f'<div style="font-size:11px;color:#aaa;margin-bottom:10px;'
+                f'white-space:nowrap;overflow:hidden;text-overflow:ellipsis" '
+                f'title="{location}">📍 {location or "&mdash;"}</div>'
+                f'<a href="{url}" style="font-size:12px;font-weight:600;'
+                f'color:#1a73e8;text-decoration:none;'
+                f'border:1px solid #1a73e8;border-radius:4px;'
+                f'padding:5px 12px;display:inline-block" target="_blank">'
+                f'View profile →</a>'
+                '</div></div>'
             )
 
         count = len(dogs)
-        label = "1 dog available" if count == 1 else f"{count} dogs available"
+        label = "1 dog" if count == 1 else f"{count} dogs"
 
         sections.append(
-            '<div style="margin-bottom:20px">'
-            f'<h2 style="font-size:18px;font-weight:700;color:#222;'
+            '<div style="margin-bottom:24px">'
+            f'<h2 style="font-size:17px;font-weight:700;color:#222;'
             f'margin:0 0 2px 0">{_esc(site_name)}</h2>'
-            f'<p style="font-size:13px;color:#888;margin:0 0 14px 0">{label}</p>'
+            f'<p style="font-size:12px;color:#aaa;margin:0 0 12px 0">'
+            f'{label}</p>'
             + "".join(cards)
             + "</div>"
         )
@@ -105,12 +113,14 @@ def format_html(results: list[tuple[str, list[Dog]]]) -> str:
         '<meta name="viewport" content="width=device-width, initial-scale=1.0">\n'
         "<title>Available Dogs</title>\n"
         "</head>\n"
-        '<body style="margin:20px;font-family:-apple-system,'
+        '<body style="margin:0;padding:24px;font-family:-apple-system,'
         "BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;"
         'background:#f5f5f5">\n'
         '<div style="max-width:520px;margin:0 auto">\n'
-        f'<h1 style="font-size:22px;font-weight:700;color:#222;'
-        f'margin:0 0 20px 0">{total_label} available for adoption</h1>\n'
+        f'<h1 style="font-size:24px;font-weight:700;color:#222;'
+        f'margin:0 0 4px 0">🐾 {total_label} available</h1>\n'
+        f'<p style="font-size:13px;color:#888;margin:0 0 24px 0">'
+        f'Female · under 1 year · breed-filtered · {len(results)} rescues</p>\n'
         + "\n".join(sections)
         + "\n</div>\n</body>\n</html>"
     )
@@ -136,6 +146,25 @@ def format_table(results: list[tuple[str, list[Dog]]]) -> str:
     return "\n".join(lines)
 
 
+def _join_broken_lines(lines: list[str]) -> list[str]:
+    """Rejoin cache lines that were split by embedded newlines in fields.
+
+    A valid cache line has 8 pipe-separated fields. If a line has fewer,
+    it's a continuation of the previous line's last field. Merge them.
+    """
+    result: list[str] = []
+    for line in lines:
+        line = line.strip()
+        if not line:
+            continue
+        if result and line.count("|") < 3:
+            # Likely a continuation — append to previous line
+            result[-1] = result[-1] + " " + line
+        else:
+            result.append(line)
+    return result
+
+
 def list_cached(data_dir: str) -> list[tuple[str, list[Dog]]]:
     """Read dogs from cache files. Does not modify any files."""
     breed_exclusion = BreedExclusionList(data_dir)
@@ -144,9 +173,11 @@ def list_cached(data_dir: str) -> list[tuple[str, list[Dog]]]:
         data_path = Path(data_dir) / checker.data_file
         if not data_path.exists():
             continue
+        raw_lines = data_path.read_text().strip().splitlines()
+        lines = _join_broken_lines(raw_lines)
         dogs = [
             dog_from_line(line)
-            for line in data_path.read_text().strip().splitlines()
+            for line in lines
             if line.strip()
         ]
         if dogs:

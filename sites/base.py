@@ -134,7 +134,6 @@ class SiteChecker(ABC):
 
         cards: list[str] = []
         for d in new_dogs:
-            # Escape HTML entities in user data
             name = _esc(d.name)
             age = _esc(d.age)
             gender = _esc(d.gender)
@@ -145,34 +144,38 @@ class SiteChecker(ABC):
             photo_html = _photo_tag(d.photo_url)
 
             cards.append(
-                '<div style="border:1px solid #e0e0e0; border-radius:8px; '
-                'padding:14px; margin-bottom:12px; font-family:-apple-system,'
-                'BlinkMacSystemFont,\'Segoe UI\',Roboto,sans-serif">'
-                '<table cellpadding="0" cellspacing="0" border="0" width="100%"><tr>'
-                f'<td width="56" style="vertical-align:top">{photo_html}</td>'
-                '<td style="vertical-align:top;padding-left:12px">'
-                f'<div style="font-size:16px;font-weight:bold;color:#222;'
-                f'margin-bottom:3px">{name}</div>'
-                f'<div style="font-size:13px;color:#555;line-height:1.5">'
-                f'{breed} &middot; {gender} &middot; {age}</div>'
-                f'<div style="font-size:12px;color:#888;margin-top:4px">'
-                f'📍 {location}</div>'
-                f'<a href="{url}" style="display:inline-block;margin-top:8px;'
-                f'font-size:12px;font-weight:600;color:#1a73e8;'
-                f'text-decoration:none;border:1px solid #1a73e8;'
-                f'border-radius:4px;padding:5px 12px">View profile →</a>'
-                '</td></tr></table></div>'
+                '<table cellpadding="0" cellspacing="0" border="0" width="100%" '
+                'style="background:#fff;border:1px solid #e0e0e0;'
+                'border-radius:10px;overflow:hidden;margin-bottom:14px"><tr>'
+                f'<td width="100" style="vertical-align:top">{photo_html}</td>'
+                '<td style="vertical-align:top;padding:14px 16px">'
+                f'<div style="font-size:16px;font-weight:700;color:#222;'
+                f'margin-bottom:2px">{name}</div>'
+                f'<div style="font-size:13px;color:#555;margin-bottom:1px">'
+                f'{breed or "&mdash;"}</div>'
+                f'<div style="font-size:12px;color:#888;margin-bottom:6px">'
+                f'{gender or "&mdash;"} &middot; {age or "&mdash;"}</div>'
+                f'<div style="font-size:11px;color:#aaa;margin-bottom:10px;'
+                f'max-width:280px;white-space:nowrap;overflow:hidden;'
+                f'text-overflow:ellipsis" title="{location}">'
+                f'📍 {location or "&mdash;"}</div>'
+                f'<a href="{url}" style="font-size:12px;font-weight:600;'
+                f'color:#1a73e8;text-decoration:none;'
+                f'border:1px solid #1a73e8;border-radius:4px;'
+                f'padding:5px 12px;display:inline-block">'
+                f'View profile →</a>'
+                '</td></tr></table>'
             )
 
         count = len(new_dogs)
         label = "1 new dog matches" if count == 1 else f"{count} new dogs match"
 
         return (
-            '<div style="margin-bottom:20px">'
-            f'<h2 style="font-size:16px;font-weight:700;color:#222;'
+            '<div style="margin-bottom:24px">'
+            f'<h2 style="font-size:17px;font-weight:700;color:#222;'
             f'margin:0 0 2px 0">{_esc(site_name)}</h2>'
-            f'<p style="font-size:13px;color:#888;margin:0 0 14px 0">{label} '
-            'match your criteria</p>'
+            f'<p style="font-size:12px;color:#aaa;margin:0 0 12px 0">'
+            f'{label} your criteria</p>'
             + "".join(cards)
             + "</div>"
         )
@@ -189,11 +192,11 @@ def _photo_tag(photo_url: str) -> str:
     if photo_url:
         safe_url = _esc(photo_url)
         return (
-            f'<img src="{safe_url}" alt="🐾" width="52" height="52" '
-            'style="border-radius:8px;object-fit:cover;display:block" />'
+            f'<img src="{safe_url}" alt="🐾" width="100" height="100" '
+            'style="border-radius:0;object-fit:cover;display:block" />'
         )
     return (
-        '<div style="width:52px;height:52px;background:#f5f0eb;'
-        'border-radius:8px;text-align:center;line-height:52px;'
-        'font-size:22px">🐾</div>'
+        '<div style="width:100px;height:100px;background:#f0ede8;'
+        'text-align:center;line-height:100px;'
+        'font-size:40px">🐾</div>'
     )

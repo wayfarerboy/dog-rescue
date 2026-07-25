@@ -28,7 +28,7 @@ class TestParseListingCards:
         assert c["age"] == "6 years"
         assert c["status"] == "Available"
         assert c["url"] == "https://brighterdaysrescue.com/dogs/anza"
-        assert c["photo_url"] == "/_next/image?url=photo.jpg"
+        assert c["photo_url"] == "https://brighterdaysrescue.com/_next/image?url=photo.jpg"
 
     def test_extracts_male_card(self):
         """Male dog should also be included (checker returns all non-reserved)."""

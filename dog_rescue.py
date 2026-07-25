@@ -34,14 +34,14 @@ _HTML_WRAPPER = """\
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 </head>
-<body style="margin:0;padding:16px;background:#f5f5f5;
+<body style="margin:0;padding:24px;background:#f5f5f5;
       font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif">
-<div style="max-width:480px;margin:0 auto;background:#fff;border-radius:4px;overflow:hidden">
-<div style="padding:16px">
-<h1 style="font-size:18px;font-weight:700;color:#222;margin:0 0 16px 0">{subject}</h1>
+<div style="max-width:520px;margin:0 auto">
+<h1 style="font-size:22px;font-weight:700;color:#222;margin:0 0 4px 0">{subject}</h1>
+<p style="font-size:13px;color:#888;margin:0 0 24px 0">
+Female &middot; under 1 year &middot; breed-filtered</p>
 {content}
-</div>
-<div style="padding:12px 16px;border-top:1px solid #f0f0f0;font-size:11px;color:#aaa">
+<div style="padding:16px 0 0 0;border-top:1px solid #e0e0e0;font-size:11px;color:#aaa;margin-top:8px">
 Dog Rescue &mdash; automated notification
 </div>
 </div>
@@ -64,7 +64,7 @@ def load_env() -> dict[str, str]:
     return env
 
 
-def main() -> None:
+def main(dry_run: bool = False) -> None:
     env = load_env()
     email = env.get("EMAIL", "")
     subject = env.get("SUBJECT", "New dogs available for adoption")
@@ -190,6 +190,14 @@ def main() -> None:
     msg.attach(MIMEText(text_body, "plain"))
     msg.attach(MIMEText(html_body, "html"))
 
+    if dry_run:
+        print("\n── DRY RUN ──")
+        print(f"To: {email}")
+        print(f"Subject: {subject}")
+        print(f"\n{msg.as_string()}")
+        print(f"\nTotal dogs: {sum(len(dogs) for _, dogs in html_sites)}")
+        return
+
     try:
         subprocess.run(
             ["msmtp", "-t"],
@@ -208,4 +216,4 @@ def main() -> None:
 
 
 if __name__ == "__main__":
-    main()
+    main(dry_run="--dry-run" in sys.argv)

@@ -152,10 +152,55 @@ class Paws2RescueChecker(SiteChecker):
 
     @staticmethod
     def _extract_og_image(soup) -> str:
-        """Extract og:image from meta tags."""
+        """Extract the best dog image from a detail page.
+
+        Tries in order:
+        1. og:image meta tag (but reject known site-default images)
+        2. twitter:image meta tag
+        3. Largest wp-image-* img element on the page
+        """
+        # Known site-default/placeholder images to reject
+        _DEFAULT_IMAGES = {"/SuPer.jpg", "/paws2rescue-icon"}
+
+        # Try og:image first
         og = soup.select_one('meta[property="og:image"]')
         if og:
-            return og.get("content", "")
+            src = og.get("content", "")
+            if src and not any(bad in src for bad in _DEFAULT_IMAGES):
+                return src
+
+        # Try twitter:image
+        tw = soup.select_one('meta[name="twitter:image"]')
+        if tw:
+            src = tw.get("content", "")
+            if src and not any(bad in src for bad in _DEFAULT_IMAGES):
+                return src
+
+        # Fallback: find the largest wp-image-* img on the page.
+        # The site uses Breeze lazy-loading — real URLs are in data-breeze,
+        # not src (which is a base64 SVG placeholder).
+        best_src = ""
+        best_area = 0
+        for img in soup.select("img[class*='wp-image-']"):
+            alt = img.get("alt", "").lower()
+            # Skip logos, icons, QR codes, and other site chrome
+            if any(kw in alt for kw in ("logo", "qr", "icon", "paypal", "storage")):
+                continue
+            # Try data-breeze first (lazy-loaded), then src
+            src = img.get("data-breeze", "") or img.get("src", "")
+            if not src or src.startswith("data:"):
+                continue
+            if any(bad in src for bad in _DEFAULT_IMAGES):
+                continue
+            w = int(img.get("width", 0) or 0)
+            h = int(img.get("height", 0) or 0)
+            area = w * h
+            if area > best_area:
+                best_area = area
+                best_src = src
+        if best_src:
+            return best_src
+
         return ""
 
     @staticmethod

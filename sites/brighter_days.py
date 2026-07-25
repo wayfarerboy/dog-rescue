@@ -105,11 +105,15 @@ class BrighterDaysChecker(SiteChecker):
                     if not url.startswith("http"):
                         url = BASE_URL + url
 
-            # Photo URL
+            # Photo URL (site uses relative /_next/image paths)
             photo_url = ""
             img = card.select_one("img")
             if img:
-                photo_url = img.get("src", "") or ""
+                src = img.get("src", "") or ""
+                if src.startswith("/"):
+                    photo_url = BASE_URL + src
+                else:
+                    photo_url = src
 
             if name and url:
                 cards.append(
@@ -141,15 +145,16 @@ class BrighterDaysChecker(SiteChecker):
             if breed_p:
                 breed = breed_p.get_text(strip=True)
 
-        # Location: parse description for origin info
+        # Location: parse description for origin info.
+        # Strip newlines to avoid split lines in the cache file.
         location = LOCATION
         desc_div = soup.select_one(".css-wdemyf")
         if desc_div:
-            desc = desc_div.get_text()
+            desc = desc_div.get_text().replace("\n", " ").replace("\r", " ")
             # Check for international origin
             rescued_match = re.search(r"Rescued from\s+(\w+(?:\s+\w+)?)", desc)
             if rescued_match:
-                country = rescued_match.group(1)
+                country = rescued_match.group(1).strip()
                 # Only annotate if non-UK origin
                 if country.lower() not in ("uk", "england", "scotland", "wales",
                                            "northern ireland", "united kingdom"):
