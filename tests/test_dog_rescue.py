@@ -1,3 +1,4 @@
+import contextlib
 import subprocess
 from pathlib import Path
 from unittest.mock import patch
@@ -50,36 +51,52 @@ class TestMain:
             main()
         assert exc.value.code == 1
 
+    def _enter_all_checker_patches(self, stack, *, return_value=None, side_effect=None):
+        """Enter patches for all known checkers using ExitStack."""
+        checkers = [
+            "sites.all_dogs_matter.AllDogsMatterChecker.check",
+            "sites.blue_cross.BlueCrossChecker.check",
+            "sites.brighter_days.BrighterDaysChecker.check",
+            "sites.cheltenham.CheltenhamChecker.check",
+            "sites.cotswolds.CotswoldsChecker.check",
+            "sites.dogs_trust.DogsTrustChecker.check",
+            "sites.forest_dog_rescue.ForestDogRescueChecker.check",
+            "sites.gsdr.GsdrChecker.check",
+            "sites.jerry_green.JerryGreenChecker.check",
+            "sites.many_tears.ManyTearsChecker.check",
+            "sites.paws2rescue.Paws2RescueChecker.check",
+            "sites.pro_dogs_direct.ProDogsDirectChecker.check",
+            "sites.raystede.RaystedeChecker.check",
+            "sites.rspca_brighton.RSPCABrightonChecker.check",
+            "sites.rspca_leeds.RSPCALeedsChecker.check",
+            "sites.scsr.SCSRChecker.check",
+            "sites.south_east_dog_rescue.SouthEastDogRescueChecker.check",
+            "sites.spaniel_aid.SpanielAidChecker.check",
+            "sites.starfish.StarfishChecker.check",
+            "sites.teckels.TeckelsChecker.check",
+            "sites.wythall.WythallChecker.check",
+        ]
+        kwargs = {}
+        if side_effect is not None:
+            kwargs["side_effect"] = side_effect
+        else:
+            kwargs["return_value"] = return_value if return_value is not None else []
+        for c in checkers:
+            stack.enter_context(patch(c, **kwargs))
+
     def test_no_new_dogs(self, tmp_path: Path, monkeypatch):
         monkeypatch.setattr("dog_rescue.SCRIPT_DIR", tmp_path)
         monkeypatch.setattr("dog_rescue.DATA_DIR", tmp_path)
         (tmp_path / ".env").write_text("EMAIL=test@example.com\n")
 
-        with (
-            patch("sites.all_dogs_matter.AllDogsMatterChecker.check", return_value=[]),
-            patch("sites.cotswolds.CotswoldsChecker.check", return_value=[]),
-            patch("sites.dogs_trust.DogsTrustChecker.check", return_value=[]),
-            patch("sites.jerry_green.JerryGreenChecker.check", return_value=[]),
-            patch("sites.many_tears.ManyTearsChecker.check", return_value=[]),
-            patch("sites.paws2rescue.Paws2RescueChecker.check", return_value=[]),
-            patch("sites.pro_dogs_direct.ProDogsDirectChecker.check", return_value=[]),
-            patch("sites.raystede.RaystedeChecker.check", return_value=[]),
-            patch("sites.rspca_brighton.RSPCABrightonChecker.check", return_value=[]),
-            patch("sites.rspca_leeds.RSPCALeedsChecker.check", return_value=[]),
-            patch("sites.scsr.SCSRChecker.check", return_value=[]),
-            patch(
-                "sites.south_east_dog_rescue.SouthEastDogRescueChecker.check",
-                return_value=[],
-            ),
-            patch("sites.spaniel_aid.SpanielAidChecker.check", return_value=[]),
-            patch("sites.starfish.StarfishChecker.check", return_value=[]),
-            patch("sites.teckels.TeckelsChecker.check", return_value=[]),
-            patch("sites.wythall.WythallChecker.check", return_value=[]),
-            patch("sites.gsdr.GsdrChecker.check", return_value=[]),
-            patch("builtins.print") as mock_print,
-        ):
+        stack = contextlib.ExitStack()
+        self._enter_all_checker_patches(stack)
+        mock_print = stack.enter_context(patch("builtins.print"))
+        try:
             main()
             mock_print.assert_called_with("No new dogs since last check.")
+        finally:
+            stack.close()
 
     def test_sends_email_on_new_dogs(self, tmp_path: Path, monkeypatch):
         monkeypatch.setattr("dog_rescue.SCRIPT_DIR", tmp_path)
@@ -97,37 +114,25 @@ class TestMain:
             "photo_url": "",
         })()
 
-        with (
-            patch(
-                "sites.all_dogs_matter.AllDogsMatterChecker.check", return_value=[fake_dog]
-            ),
-            patch(
-                "sites.all_dogs_matter.AllDogsMatterChecker.format_section",
-                return_value="=== Section ===",
-            ),
-            patch("sites.cotswolds.CotswoldsChecker.check", return_value=[]),
-            patch("sites.dogs_trust.DogsTrustChecker.check", return_value=[]),
-            patch("sites.jerry_green.JerryGreenChecker.check", return_value=[]),
-            patch("sites.many_tears.ManyTearsChecker.check", return_value=[]),
-            patch("sites.paws2rescue.Paws2RescueChecker.check", return_value=[]),
-            patch("sites.pro_dogs_direct.ProDogsDirectChecker.check", return_value=[]),
-            patch("sites.raystede.RaystedeChecker.check", return_value=[]),
-            patch("sites.rspca_brighton.RSPCABrightonChecker.check", return_value=[]),
-            patch("sites.rspca_leeds.RSPCALeedsChecker.check", return_value=[]),
-            patch("sites.scsr.SCSRChecker.check", return_value=[]),
-            patch(
-                "sites.south_east_dog_rescue.SouthEastDogRescueChecker.check",
-                return_value=[],
-            ),
-            patch("sites.spaniel_aid.SpanielAidChecker.check", return_value=[]),
-            patch("subprocess.run") as mock_run,
-        ):
+        stack = contextlib.ExitStack()
+        self._enter_all_checker_patches(stack, return_value=[])
+        stack.enter_context(
+            patch("sites.all_dogs_matter.AllDogsMatterChecker.check", return_value=[fake_dog])
+        )
+        stack.enter_context(
+            patch("sites.all_dogs_matter.AllDogsMatterChecker.format_section",
+                  return_value="=== Section ===")
+        )
+        mock_run = stack.enter_context(patch("subprocess.run"))
+        try:
             main()
             mock_run.assert_called_once()
             args, kwargs = mock_run.call_args
             assert args[0] == ["msmtp", "-t"]
             assert "test@example.com" in kwargs["input"]
             assert "=== Section ===" in kwargs["input"]
+        finally:
+            stack.close()
 
     def test_msmtp_not_found_exits(self, tmp_path: Path, monkeypatch):
         monkeypatch.setattr("dog_rescue.SCRIPT_DIR", tmp_path)
@@ -145,37 +150,24 @@ class TestMain:
             "photo_url": "",
         })()
 
-        with (
-            patch(
-                "sites.all_dogs_matter.AllDogsMatterChecker.check",
-                return_value=[fake_dog],
-            ),
-            patch(
-                "sites.all_dogs_matter.AllDogsMatterChecker.format_section",
-                return_value="X",
-            ),
-            patch("sites.cotswolds.CotswoldsChecker.check", return_value=[]),
-            patch("sites.dogs_trust.DogsTrustChecker.check", return_value=[]),
-            patch("sites.jerry_green.JerryGreenChecker.check", return_value=[]),
-            patch("sites.many_tears.ManyTearsChecker.check", return_value=[]),
-            patch("sites.paws2rescue.Paws2RescueChecker.check", return_value=[]),
-            patch("sites.pro_dogs_direct.ProDogsDirectChecker.check", return_value=[]),
-            patch("sites.raystede.RaystedeChecker.check", return_value=[]),
-            patch("sites.rspca_brighton.RSPCABrightonChecker.check", return_value=[]),
-            patch("sites.rspca_leeds.RSPCALeedsChecker.check", return_value=[]),
-            patch("sites.scsr.SCSRChecker.check", return_value=[]),
-            patch(
-                "sites.south_east_dog_rescue.SouthEastDogRescueChecker.check",
-                return_value=[],
-            ),
-            patch("sites.spaniel_aid.SpanielAidChecker.check", return_value=[]),
-            patch("sites.teckels.TeckelsChecker.check", return_value=[]),
-            patch("sites.wythall.WythallChecker.check", return_value=[]),
-            patch("sites.gsdr.GsdrChecker.check", return_value=[]),
-            patch("subprocess.run", side_effect=FileNotFoundError),
-            pytest.raises(SystemExit) as exc,
-        ):
-            main()
+        stack = contextlib.ExitStack()
+        self._enter_all_checker_patches(stack, return_value=[])
+        stack.enter_context(
+            patch("sites.all_dogs_matter.AllDogsMatterChecker.check",
+                  return_value=[fake_dog])
+        )
+        stack.enter_context(
+            patch("sites.all_dogs_matter.AllDogsMatterChecker.format_section",
+                  return_value="X")
+        )
+        stack.enter_context(
+            patch("subprocess.run", side_effect=FileNotFoundError)
+        )
+        try:
+            with pytest.raises(SystemExit) as exc:
+                main()
+        finally:
+            stack.close()
         assert exc.value.code == 1
 
     def test_subprocess_error_exits(self, tmp_path: Path, monkeypatch):
@@ -194,40 +186,25 @@ class TestMain:
             "photo_url": "",
         })()
 
-        with (
-            patch(
-                "sites.all_dogs_matter.AllDogsMatterChecker.check",
-                return_value=[fake_dog],
-            ),
-            patch(
-                "sites.all_dogs_matter.AllDogsMatterChecker.format_section",
-                return_value="X",
-            ),
-            patch("sites.cotswolds.CotswoldsChecker.check", return_value=[]),
-            patch("sites.dogs_trust.DogsTrustChecker.check", return_value=[]),
-            patch("sites.jerry_green.JerryGreenChecker.check", return_value=[]),
-            patch("sites.many_tears.ManyTearsChecker.check", return_value=[]),
-            patch("sites.paws2rescue.Paws2RescueChecker.check", return_value=[]),
-            patch("sites.pro_dogs_direct.ProDogsDirectChecker.check", return_value=[]),
-            patch("sites.raystede.RaystedeChecker.check", return_value=[]),
-            patch("sites.rspca_brighton.RSPCABrightonChecker.check", return_value=[]),
-            patch("sites.rspca_leeds.RSPCALeedsChecker.check", return_value=[]),
-            patch("sites.scsr.SCSRChecker.check", return_value=[]),
-            patch(
-                "sites.south_east_dog_rescue.SouthEastDogRescueChecker.check",
-                return_value=[],
-            ),
-            patch("sites.spaniel_aid.SpanielAidChecker.check", return_value=[]),
-            patch("sites.teckels.TeckelsChecker.check", return_value=[]),
-            patch("sites.wythall.WythallChecker.check", return_value=[]),
-            patch("sites.gsdr.GsdrChecker.check", return_value=[]),
-            patch(
-                "subprocess.run",
-                side_effect=subprocess.CalledProcessError(1, "msmtp"),
-            ),
-            pytest.raises(SystemExit) as exc,
-        ):
-            main()
+        stack = contextlib.ExitStack()
+        self._enter_all_checker_patches(stack, return_value=[])
+        stack.enter_context(
+            patch("sites.all_dogs_matter.AllDogsMatterChecker.check",
+                  return_value=[fake_dog])
+        )
+        stack.enter_context(
+            patch("sites.all_dogs_matter.AllDogsMatterChecker.format_section",
+                  return_value="X")
+        )
+        stack.enter_context(
+            patch("subprocess.run",
+                  side_effect=subprocess.CalledProcessError(1, "msmtp"))
+        )
+        try:
+            with pytest.raises(SystemExit) as exc:
+                main()
+        finally:
+            stack.close()
         assert exc.value.code == 1
 
     def test_checker_error_does_not_block_others(self, tmp_path: Path, monkeypatch):
@@ -246,40 +223,28 @@ class TestMain:
             "photo_url": "",
         })()
 
-        with (
-            patch(
-                "sites.all_dogs_matter.AllDogsMatterChecker.check",
-                side_effect=RuntimeError("boom"),
-            ),
-            patch("sites.cotswolds.CotswoldsChecker.check", return_value=[]),
-            patch("sites.dogs_trust.DogsTrustChecker.check", return_value=[]),
-            patch("sites.jerry_green.JerryGreenChecker.check", return_value=[]),
-            patch("sites.many_tears.ManyTearsChecker.check", return_value=[]),
-            patch("sites.paws2rescue.Paws2RescueChecker.check", return_value=[]),
-            patch("sites.pro_dogs_direct.ProDogsDirectChecker.check", return_value=[]),
-            patch("sites.raystede.RaystedeChecker.check", return_value=[]),
-            patch("sites.rspca_brighton.RSPCABrightonChecker.check", return_value=[]),
-            patch("sites.rspca_leeds.RSPCALeedsChecker.check", return_value=[]),
-            patch(
-                "sites.scsr.SCSRChecker.check", return_value=[fake_dog]
-            ),
-            patch(
-                "sites.scsr.SCSRChecker.format_section",
-                return_value="=== SCSR ===",
-            ),
-            patch(
-                "sites.south_east_dog_rescue.SouthEastDogRescueChecker.check",
-                return_value=[],
-            ),
-            patch("sites.spaniel_aid.SpanielAidChecker.check", return_value=[]),
-            patch("sites.teckels.TeckelsChecker.check", return_value=[]),
-            patch("sites.wythall.WythallChecker.check", return_value=[]),
-            patch("sites.gsdr.GsdrChecker.check", return_value=[]),
-            patch("subprocess.run") as mock_run,
-        ):
+        stack = contextlib.ExitStack()
+        self._enter_all_checker_patches(stack, return_value=[])
+        # Override all_dogs_matter to raise
+        stack.enter_context(
+            patch("sites.all_dogs_matter.AllDogsMatterChecker.check",
+                  side_effect=RuntimeError("boom"))
+        )
+        # Override scsr to return dog
+        stack.enter_context(
+            patch("sites.scsr.SCSRChecker.check", return_value=[fake_dog])
+        )
+        stack.enter_context(
+            patch("sites.scsr.SCSRChecker.format_section",
+                  return_value="=== SCSR ===")
+        )
+        mock_run = stack.enter_context(patch("subprocess.run"))
+        try:
             main()
             mock_run.assert_called_once()
             assert "=== SCSR ===" in mock_run.call_args.kwargs["input"]
+        finally:
+            stack.close()
 
     def test_distance_filtering_excludes_far_dogs(self, tmp_path: Path, monkeypatch):
         """Dogs from centers beyond MAX_DISTANCE_MILES are excluded from email."""
@@ -310,41 +275,26 @@ class TestMain:
             "photo_url": "",
         })()
 
-        with (
-            patch(
-                "sites.all_dogs_matter.AllDogsMatterChecker.check",
-                return_value=[near_dog, far_dog],
-            ),
-            patch(
-                "sites.all_dogs_matter.AllDogsMatterChecker.format_section",
-                return_value="=== Section ===",
-            ) as mock_format,
-            patch("sites.cotswolds.CotswoldsChecker.check", return_value=[]),
-            patch("sites.dogs_trust.DogsTrustChecker.check", return_value=[]),
-            patch("sites.jerry_green.JerryGreenChecker.check", return_value=[]),
-            patch("sites.many_tears.ManyTearsChecker.check", return_value=[]),
-            patch("sites.paws2rescue.Paws2RescueChecker.check", return_value=[]),
-            patch("sites.pro_dogs_direct.ProDogsDirectChecker.check", return_value=[]),
-            patch("sites.raystede.RaystedeChecker.check", return_value=[]),
-            patch("sites.rspca_brighton.RSPCABrightonChecker.check", return_value=[]),
-            patch("sites.rspca_leeds.RSPCALeedsChecker.check", return_value=[]),
-            patch("sites.scsr.SCSRChecker.check", return_value=[]),
-            patch(
-                "sites.south_east_dog_rescue.SouthEastDogRescueChecker.check",
-                return_value=[],
-            ),
-            patch("sites.spaniel_aid.SpanielAidChecker.check", return_value=[]),
-            patch("sites.teckels.TeckelsChecker.check", return_value=[]),
-            patch("sites.wythall.WythallChecker.check", return_value=[]),
-            patch("sites.gsdr.GsdrChecker.check", return_value=[]),
-            patch.object(DistanceLookup, "_load", return_value=None),
-            patch.object(
-                DistanceLookup,
-                "get_distance",
-                side_effect=lambda center: {"Cardiff": 80.0, "Edinburgh": 320.0}.get(center),
-            ),
-            patch("subprocess.run"),
-        ):
+        stack = contextlib.ExitStack()
+        self._enter_all_checker_patches(stack, return_value=[])
+        # Override all_dogs_matter with test dogs
+        stack.enter_context(
+            patch("sites.all_dogs_matter.AllDogsMatterChecker.check",
+                  return_value=[near_dog, far_dog])
+        )
+        mock_format = stack.enter_context(
+            patch("sites.all_dogs_matter.AllDogsMatterChecker.format_section",
+                  return_value="=== Section ===")
+        )
+        stack.enter_context(
+            patch.object(DistanceLookup, "_load", return_value=None)
+        )
+        stack.enter_context(
+            patch.object(DistanceLookup, "get_distance",
+                        side_effect=lambda center: {"Cardiff": 80.0, "Edinburgh": 320.0}.get(center))
+        )
+        stack.enter_context(patch("subprocess.run"))
+        try:
             main()
             # format_section called with only the near dog (far dog filtered out)
             call_args = mock_format.call_args[0]
@@ -352,3 +302,5 @@ class TestMain:
             assert len(filtered_dogs) == 1
             assert filtered_dogs[0].name == "Bella"
             assert filtered_dogs[0].location == "Cardiff"
+        finally:
+            stack.close()
