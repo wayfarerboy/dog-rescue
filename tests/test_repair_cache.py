@@ -68,17 +68,19 @@ class TestMissingFields:
         parts = ["Available", "Bella", "6M", "Female", "Lab", "Cardiff", "http://p.jpg", "http://b"]
         assert missing_fields(parts) == {}
 
-    def test_empty_status(self):
+    def test_empty_fields_not_flagged(self):
+        """Empty values within valid positions are not flagged - only
+        structurally missing indices matter."""
         parts = ["", "Bella", "6M", "Female", "Lab", "Cardiff", "http://p.jpg", "http://b"]
-        assert missing_fields(parts) == {0: "status"}
+        assert missing_fields(parts) == {}
 
-    def test_empty_photo_url(self):
+    def test_empty_photo_url_not_flagged(self):
         parts = ["Available", "Bella", "6M", "Female", "Lab", "Cardiff", "", "http://b"]
-        assert missing_fields(parts) == {6: "photo_url"}
+        assert missing_fields(parts) == {}
 
-    def test_multiple_missing(self):
+    def test_multiple_empty_not_flagged(self):
         parts = ["", "Bella", "6M", "Female", "Lab", "", "", "http://b"]
-        assert missing_fields(parts) == {0: "status", 5: "location", 6: "photo_url"}
+        assert missing_fields(parts) == {}
 
     def test_too_few_fields(self):
         """Extremely short entry: indices beyond len(parts) are flagged.
@@ -89,15 +91,16 @@ class TestMissingFields:
         """
         parts = ["Bella", "6M", "Female", "Lab", "http://b"]
         missing = missing_fields(parts)
-        # Indices 0-4 are present and non-empty
+        # Indices 0-4 are present (no empty checks)
         assert 0 not in missing
         # Indices 5-7 are beyond parts length
         assert 5 in missing  # location
         assert 6 in missing  # photo_url
         assert 7 in missing  # url
 
-    def test_seven_fields_old_format(self):
-        """After parse_entry normalizes old 7-field, we still detect missing photo_url."""
+    def test_seven_fields_not_flagged_when_normalized(self):
+        """After parse_entry normalizes old 7-field format to 8,
+        no positions are structurally missing."""
         parts = ["Available", "Bella", "6M", "Female", "Lab", "Cardiff", "", "http://b"]
         missing = missing_fields(parts)
-        assert missing == {6: "photo_url"}
+        assert missing == {}

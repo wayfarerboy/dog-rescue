@@ -163,6 +163,6 @@ class AllDogsMatterChecker(SiteChecker):
         ]
 
         new = self.diff(filtered)
-        if new:
+        if new or not self._data_path.exists():
             self._save_current(filtered)
         return new

@@ -89,6 +89,35 @@ class TestSiteChecker:
         new2 = c.check()
         assert new2 == []
 
+    def test_check_saves_on_first_run_even_when_empty(self, tmp_path: Path):
+        """First run with no dogs should still create the cache file."""
+        c = FakeChecker(str(tmp_path), dogs=[])
+        new = c.check()
+        assert new == []
+        assert c._data_path.exists()
+        # File exists with just a newline from empty save
+        assert c._data_path.read_text() == "\n"
+
+    def test_check_does_not_overwrite_cache_when_no_new_dogs(self, tmp_path: Path):
+        """Second run with no new dogs leaves existing cache untouched."""
+        c = FakeChecker(
+            str(tmp_path),
+            dogs=[make_dog("A", "https://a")],
+        )
+        # First run creates cache
+        c.check()
+        first_content = c._data_path.read_text()
+
+        # Second run: different dogs but diff returns empty (same URLs)
+        c2 = FakeChecker(
+            str(tmp_path),
+            dogs=[make_dog("A", "https://a")],
+        )
+        new2 = c2.check()
+        assert new2 == []
+        # Cache unchanged because it already existed and no new dogs
+        assert c2._data_path.read_text() == first_content
+
     def test_format_section(self, tmp_path: Path):
         c = FakeChecker(str(tmp_path))
         dogs = [make_dog("Bella", "https://bella")]

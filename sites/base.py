@@ -90,11 +90,15 @@ class SiteChecker(ABC):
         return new_dogs
 
     def check(self) -> list[Dog]:
-        """Fetch, parse, and return new dogs. Updates data file if any found."""
+        """Fetch, parse, and return new dogs. Updates data file if any found.
+
+        Always saves the cache on the first run (when no cache file exists)
+        so that every site has a baseline cache file.
+        """
         raw = self.fetch()
         dogs = self.parse(raw)
         new = self.diff(dogs)
-        if new:
+        if new or not self._data_path.exists():
             self._save_current(dogs)
         return new
 

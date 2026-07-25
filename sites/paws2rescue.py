@@ -81,7 +81,7 @@ class Paws2RescueChecker(SiteChecker):
         filtered = [d for d in dogs if self._age_months(d.age) <= 12]
 
         new = self.diff(filtered)
-        if new:
+        if new or not self._data_path.exists():
             self._save_current(filtered)
         return new
 

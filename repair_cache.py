@@ -86,12 +86,13 @@ def parse_entry(line: str) -> list[str]:
 
 
 def missing_fields(parts: list[str]) -> dict[int, str]:
-    """Return {field_index: field_name} for missing or empty fields."""
+    """Return {field_index: field_name} for fields beyond the parts length.
+
+    Only flags structurally missing positions, not empty values.
+    An entry with 8 pipe-separated fields (even empty ones) is considered
+    structurally complete.
+    """
     missing: dict[int, str] = {}
-    for i in range(min(len(parts), FIELD_COUNT)):
-        if parts[i] == "":
-            missing[i] = FIELD_NAMES[i]
-    # Also flag completely missing fields beyond the parts length
     for i in range(len(parts), FIELD_COUNT):
         missing[i] = FIELD_NAMES[i]
     return missing
