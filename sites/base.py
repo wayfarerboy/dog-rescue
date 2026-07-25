@@ -2,11 +2,9 @@
 
 from __future__ import annotations
 
-import os
 from abc import ABC, abstractmethod
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from pathlib import Path
-from typing import List
 
 
 @dataclass
@@ -49,7 +47,7 @@ class SiteChecker(ABC):
         ...
 
     @abstractmethod
-    def parse(self, raw: str) -> List[Dog]:
+    def parse(self, raw: str) -> list[Dog]:
         """Parse raw data into a list of Dog objects."""
         ...
 
@@ -67,17 +65,17 @@ class SiteChecker(ABC):
                 urls.add(line.strip())
         return urls
 
-    def _save_current(self, dogs: List[Dog]) -> None:
+    def _save_current(self, dogs: list[Dog]) -> None:
         """Save current dogs to the data file."""
         self._data_path.write_text("\n".join(d.as_line() for d in dogs) + "\n")
 
-    def diff(self, current: List[Dog]) -> List[Dog]:
+    def diff(self, current: list[Dog]) -> list[Dog]:
         """Return dogs not seen in the previous run."""
         previous_urls = self._load_previous()
         new_dogs = [d for d in current if d.url not in previous_urls]
         return new_dogs
 
-    def check(self) -> List[Dog]:
+    def check(self) -> list[Dog]:
         """Fetch, parse, and return new dogs. Updates data file if any found."""
         raw = self.fetch()
         dogs = self.parse(raw)
@@ -86,7 +84,7 @@ class SiteChecker(ABC):
             self._save_current(dogs)
         return new
 
-    def format_section(self, new_dogs: List[Dog], heading: str, columns: str) -> str:
+    def format_section(self, new_dogs: list[Dog], heading: str, columns: str) -> str:
         """Format new dogs as an email section."""
         if not new_dogs:
             return ""

@@ -8,7 +8,6 @@ Cron:   0 8 * * * cd /path/to/dog-rescue && python3 dog_rescue.py
 
 from __future__ import annotations
 
-import os
 import subprocess
 import sys
 from pathlib import Path
@@ -42,9 +41,9 @@ def main() -> None:
         sys.exit(1)
 
     # Import site checkers
+    from sites.dogs_trust import DogsTrustChecker
     from sites.many_tears import ManyTearsChecker
     from sites.scsr import SCSRChecker
-    from sites.dogs_trust import DogsTrustChecker
 
     checkers = [
         ManyTearsChecker(str(DATA_DIR)),

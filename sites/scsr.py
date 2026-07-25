@@ -27,10 +27,10 @@ class SCSRChecker(SiteChecker):
             name = self._text(article, "h3")
             status = self._status(article)
             link = self._profile_link(article)
-            gender = self._info_field(article, "fa-venus-mars")
-            age = self._info_field(article, "fa-calendar-days")
-            breed = self._info_field(article, "fa-dog")
-            location = self._info_field(article, "fa-location-dot")
+            gender = self._info_field(article, "venus-mars")
+            age = self._info_field(article, "calendar-days")
+            breed = self._info_field(article, "dog")
+            location = self._info_field(article, "location-dot")
 
             # Filter: female + month-based age only (under 1 year)
             if gender != "Female":
@@ -80,7 +80,7 @@ class SCSRChecker(SiteChecker):
         return ""
 
     def _info_field(self, article, icon_class: str) -> str:
-        """Extract value from an info box: find <i class="... fa-icon ..."> then the following <span>."""
+        """Extract value from an info box: find <i class="fa-..."> then the next <span>."""
         for info_box in article.select(".scsr-modern-info-box"):
             icon = info_box.select_one(f"i.fa-{icon_class}")
             if icon:

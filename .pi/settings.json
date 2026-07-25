@@ -1,0 +1,18 @@
+{
+  "parallel": {
+    "maxTasks": 12,
+    "concurrency": 4
+  },
+  "maxSubagentDepth": 3,
+  "subagents": {
+    "agentOverrides": {
+      "issue-handler": {
+        "model": "anthropic/claude-sonnet-4"
+      }
+    },
+    "disableBuiltins": false
+  },
+  "orchestrate": {
+    "reviewLabel": "reviewed"
+  }
+}
