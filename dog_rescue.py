@@ -42,6 +42,7 @@ def main() -> None:
 
     # Import site checkers
     from sites.dogs_trust import DogsTrustChecker
+    from sites.jerry_green import JerryGreenChecker
     from sites.many_tears import ManyTearsChecker
     from sites.pro_dogs_direct import ProDogsDirectChecker
     from sites.scsr import SCSRChecker
@@ -51,6 +52,7 @@ def main() -> None:
         SCSRChecker(str(DATA_DIR)),
         DogsTrustChecker(str(DATA_DIR)),
         ProDogsDirectChecker(str(DATA_DIR)),
+        JerryGreenChecker(str(DATA_DIR)),
     ]
 
     all_new: list[str] = []
