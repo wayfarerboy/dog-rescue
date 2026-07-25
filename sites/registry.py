@@ -28,6 +28,7 @@ from sites.rspca_leeds import RSPCALeedsChecker
 from sites.scsr import SCSRChecker
 from sites.south_east_dog_rescue import SouthEastDogRescueChecker
 from sites.spaniel_aid import SpanielAidChecker
+from sites.starfish import StarfishChecker
 
 
 def _load_max_distance(data_dir: str) -> float | None:
@@ -70,6 +71,7 @@ def get_checkers(data_dir: str) -> list[SiteChecker]:
         SCSRChecker(data_dir),
         SouthEastDogRescueChecker(data_dir),
         SpanielAidChecker(data_dir),
+        StarfishChecker(data_dir),
     ]
 
 

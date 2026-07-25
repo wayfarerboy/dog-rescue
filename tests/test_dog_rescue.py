@@ -72,6 +72,7 @@ class TestMain:
                 return_value=[],
             ),
             patch("sites.spaniel_aid.SpanielAidChecker.check", return_value=[]),
+            patch("sites.starfish.StarfishChecker.check", return_value=[]),
             patch("builtins.print") as mock_print,
         ):
             main()
