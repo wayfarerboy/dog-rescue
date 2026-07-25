@@ -75,7 +75,7 @@ class TestParse:
         assert d.status == "Available"
         assert d.url == "https://www.raystede.org/adopt/dogs/?animal=25001"
         assert d.photo_url == "https://www.raystede.org/anilog-images/50001.jpg"
-        assert d.location == ""
+        assert d.location == "Ringmer, East Sussex"
 
     def test_male_filtered_out(self, tmp_path):
         raw = json.dumps(
@@ -418,6 +418,118 @@ class TestParse:
         c = RaystedeChecker(str(tmp_path))
         dogs = c.parse(raw)
         assert dogs == []
+
+
+class TestLocation:
+    def test_location_populated_for_female_puppy(self, tmp_path):
+        """Location should be 'Ringmer, East Sussex' for every dog."""
+        raw = json.dumps(
+            {
+                "status": "success",
+                "count": 1,
+                "data": [
+                    {
+                        "id": 1,
+                        "animalref": "25001",
+                        "species": "Dog",
+                        "name": "Luna",
+                        "gender": "Female",
+                        "breed": "Cocker Spaniel",
+                        "age": "8 months",
+                        "image": "50001",
+                        "reserved": 0,
+                        "is_meeting": 0,
+                    }
+                ],
+            }
+        )
+        c = RaystedeChecker(str(tmp_path))
+        dogs = c.parse(raw)
+        assert len(dogs) == 1
+        assert dogs[0].location == "Ringmer, East Sussex"
+
+    def test_location_on_meeting_a_match_dog(self, tmp_path):
+        """Dogs with 'Meeting a Match' status also have location."""
+        raw = json.dumps(
+            {
+                "status": "success",
+                "count": 1,
+                "data": [
+                    {
+                        "id": 5,
+                        "animalref": "25005",
+                        "species": "Dog",
+                        "name": "Poppy",
+                        "gender": "Female",
+                        "breed": "Collie",
+                        "age": "6 months",
+                        "image": "50005",
+                        "reserved": 0,
+                        "is_meeting": 1,
+                    }
+                ],
+            }
+        )
+        c = RaystedeChecker(str(tmp_path))
+        dogs = c.parse(raw)
+        assert len(dogs) == 1
+        assert dogs[0].location == "Ringmer, East Sussex"
+
+    def test_location_on_pair_dog(self, tmp_path):
+        """Bonded pairs also get location."""
+        raw = json.dumps(
+            {
+                "status": "success",
+                "count": 1,
+                "data": [
+                    {
+                        "id": 15,
+                        "animalref": "25015",
+                        "species": "Dog",
+                        "name": "Bonnie & Clyde",
+                        "gender": "Male & Female",
+                        "breed": "Lurcher",
+                        "age": "8 months",
+                        "image": "50015",
+                        "reserved": 0,
+                        "is_meeting": 0,
+                    }
+                ],
+            }
+        )
+        c = RaystedeChecker(str(tmp_path))
+        dogs = c.parse(raw)
+        assert len(dogs) == 1
+        assert dogs[0].location == "Ringmer, East Sussex"
+
+    def test_as_line_includes_location(self, tmp_path):
+        """The as_line() output includes all 8 fields with location."""
+        raw = json.dumps(
+            {
+                "status": "success",
+                "count": 1,
+                "data": [
+                    {
+                        "id": 1,
+                        "animalref": "25001",
+                        "species": "Dog",
+                        "name": "Luna",
+                        "gender": "Female",
+                        "breed": "Cocker Spaniel",
+                        "age": "8 months",
+                        "image": "50001",
+                        "reserved": 0,
+                        "is_meeting": 0,
+                    }
+                ],
+            }
+        )
+        c = RaystedeChecker(str(tmp_path))
+        dogs = c.parse(raw)
+        line = dogs[0].as_line()
+        parts = line.split(" | ")
+        assert len(parts) == 8, f"Expected 8 fields, got {len(parts)}: {parts}"
+        assert parts[5] == "Ringmer, East Sussex"  # location is 6th field (0-indexed: 5)
 
 
 class TestIntegration:
