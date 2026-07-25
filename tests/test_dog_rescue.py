@@ -55,6 +55,7 @@ class TestMain:
         """Enter patches for all known checkers using ExitStack."""
         checkers = [
             "sites.all_dogs_matter.AllDogsMatterChecker.check",
+            "sites.birmingham_dogs_home.BirminghamDogsHomeChecker.check",
             "sites.blue_cross.BlueCrossChecker.check",
             "sites.brighter_days.BrighterDaysChecker.check",
             "sites.cheltenham.CheltenhamChecker.check",

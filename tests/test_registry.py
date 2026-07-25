@@ -13,6 +13,7 @@ def test_all_checkers_present() -> None:
 
     expected = sorted([
         "All Dogs Matter",
+        "Birmingham Dogs Home",
         "Blue Cross Bromsgrove",
         "Blue Cross Burford",
         "Brighter Days Rescue",
@@ -36,6 +37,6 @@ def test_all_checkers_present() -> None:
         "Wythall Animal Sanctuary",
     ])
 
-    assert len(checkers) >= 21, f"Expected at least 22 checkers, got {len(checkers)}"
+    assert len(checkers) >= 22, f"Expected at least 23 checkers, got {len(checkers)}"
     missing = set(expected) ^ set(site_names)
     assert site_names == expected, f"Missing or unexpected checkers: {missing}"
