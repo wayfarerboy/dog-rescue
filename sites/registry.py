@@ -14,6 +14,7 @@ from pathlib import Path
 from sites.all_dogs_matter import AllDogsMatterChecker
 from sites.base import SiteChecker
 from sites.birch_hill import BirchHillChecker
+from sites.blue_cross import BlueCrossChecker
 from sites.cheltenham import CheltenhamChecker
 from sites.cotswolds import CotswoldsChecker
 from sites.dogs_trust import DogsTrustChecker
@@ -70,6 +71,8 @@ def get_checkers(data_dir: str) -> list[SiteChecker]:
         SCSRChecker(data_dir),
         SouthEastDogRescueChecker(data_dir),
         SpanielAidChecker(data_dir),
+        BlueCrossChecker(data_dir, "bromsgrove"),
+        BlueCrossChecker(data_dir, "burford"),
     ]
 
 
