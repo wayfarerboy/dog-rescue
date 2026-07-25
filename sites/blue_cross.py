@@ -151,6 +151,7 @@ class BlueCrossChecker(SiteChecker):
             gender=sex,
             breed=breed,
             url=url,
+            status="Available",
             location=location,
             photo_url=photo_url,
         )

@@ -152,22 +152,37 @@ class GsdrChecker(SiteChecker):
                 if len(title_text) < 80:
                     result["name"] = title_text
 
-        # Parse structured fields: "Gender: Female", "Age: 4", etc.
-        for line in lines:
-            stripped = line.strip()
-            if not stripped:
-                continue
-
-            low = stripped.lower()
-            if low.startswith("gender:"):
-                result["gender"] = stripped[7:].strip()
-            elif low.startswith("age:"):
-                result["age"] = stripped[4:].strip()
-            elif low.startswith("color:"):
-                # Optional: could use color to refine breed
-                pass
-            elif low.startswith("neutered:"):
-                pass
+        # Parse structured fields from infoBox table.
+        # Real pages use <table class="infoBox"> with tr > td.lightGreen (label)
+        # and td.main (value).  Flat-text fixtures pass labels inline.
+        info_table = soup.select_one("table.infoBox")
+        if info_table:
+            for row in info_table.select("tr"):
+                cells = row.select("td")
+                if len(cells) < 2:
+                    continue
+                label = cells[0].get_text(strip=True).rstrip(":").strip().lower()
+                # Value is in the last td (skipping the rowspan spacer if present)
+                value = cells[-1].get_text(strip=True)
+                if label == "gender":
+                    result["gender"] = value
+                elif label == "age":
+                    result["age"] = value
+                elif label in ("color", "neutered"):
+                    pass
+        else:
+            # Fallback: parse flat text (used in test fixtures)
+            for line in lines:
+                stripped = line.strip()
+                if not stripped:
+                    continue
+                low = stripped.lower()
+                if low.startswith("gender:"):
+                    result["gender"] = stripped[7:].strip()
+                elif low.startswith("age:"):
+                    result["age"] = stripped[4:].strip()
+                elif low.startswith(("color:", "neutered:")):
+                    pass
 
         # Normalize age: "8 YEARS / 10 YEARS" → keep as-is but clean
         age = result["age"]

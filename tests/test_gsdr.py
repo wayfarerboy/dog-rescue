@@ -160,6 +160,36 @@ class TestParseDetail:
             "https://www.germanshepherdrescue.co.uk/dogimages/apollo.jpg"
         )
 
+    def test_extracts_from_info_table(self):
+        """Real GSDR pages use <table class=\"infoBox\"> with <td> cells."""
+        html = """
+        <title>Morris</title>
+        <table cellpadding="4" width="100%" class="infoBox">
+          <tr><td colspan="3" class="moreinfo">More information</td></tr>
+          <tr>
+            <td class="main lightGreen" width="130">Gender: </td>
+            <td rowspan="8" width="10">&nbsp;</td>
+            <td class="main">Male</td>
+          </tr>
+          <tr>
+            <td class="main lightGreen">Age: </td>
+            <td class="main">4</td>
+          </tr>
+          <tr>
+            <td class="main lightGreen">Color: </td>
+            <td class="main">Black &amp; Tan</td>
+          </tr>
+          <tr>
+            <td class="main lightGreen">Neutered: </td>
+            <td class="main">No</td>
+          </tr>
+        </table>
+        """
+        detail = GsdrChecker._parse_detail(html, "Morris", "test-url")
+        assert detail["name"] == "Morris"
+        assert detail["gender"] == "Male"
+        assert detail["age"] == "4"
+
     def test_missing_fields_use_empty_strings(self):
         """Minimal detail page."""
         html = """

@@ -117,6 +117,7 @@ class TestParseProfile:
         assert dog.breed == "Labrador, Yellow"
         assert dog.gender == "Male"
         assert dog.age == "2 years 4 months"
+        assert dog.status == "Available"
         assert dog.location == "West Midlands: Bromsgrove rehoming centre"
         assert dog.url == "https://www.bluecross.org.uk/pet/buddy-123"
         assert "/pet_profile/" in dog.photo_url

@@ -140,6 +140,65 @@ class TestParseDetail:
         assert detail["gender"] == ""
         assert detail["age"] == ""
 
+    def test_extracts_from_strong_tags(self):
+        """Real Wythall pages use <strong> tags inside <li> elements."""
+        html = """
+        <title>Crumpet \u2014 Wythall Animal Sanctuary</title>
+        <h3>More About Me</h3>
+        <ul>
+          <li><p><strong>Breed</strong> -Presa X Mastiff Crossbreed</p></li>
+          <li><p><strong>Size</strong> - Large</p></li>
+          <li><p><strong>Sex -</strong> Male</p></li>
+          <li><p><strong>Age</strong> - 4 years</p></li>
+        </ul>
+        """
+        detail = WythallChecker._parse_detail(html, "Crumpet")
+        assert detail["breed"] == "Presa X Mastiff Crossbreed"
+        assert detail["gender"] == "Male"
+        assert detail["age"] == "4 years"
+
+    def test_extracts_from_strong_tags_sex_dash_inside(self):
+        """Handle 'Sex -' where dash is inside <strong>."""
+        html = """
+        <title>Eddie \u2014 Wythall Animal Sanctuary</title>
+        <h3>More About Me</h3>
+        <ul>
+          <li><p><strong>Breed</strong> -Lurcher</p></li>
+          <li><p><strong>Sex -</strong> Male</p></li>
+          <li><p><strong>Age</strong> - 1 year</p></li>
+        </ul>
+        """
+        detail = WythallChecker._parse_detail(html, "Eddie")
+        assert detail["breed"] == "Lurcher"
+        assert detail["gender"] == "Male"
+        assert detail["age"] == "1 year"
+
+    def test_extracts_from_h4_format(self):
+        """Ronnie/Ziggy use <h4><strong>LABEL:</strong> VALUE</h4> format."""
+        html = """
+        <title>Ronnie \u2014 Wythall Animal Sanctuary</title>
+        <h4><strong>AGE:</strong> 1 Year</h4>
+        <h4><strong>BREED: </strong> Mixed breed</h4>
+        <h4><strong>COLOUR: </strong>Tan + Black</h4>
+        """
+        detail = WythallChecker._parse_detail(html, "Ronnie")
+        assert detail["age"] == "1 Year"
+        assert detail["breed"] == "Mixed breed"
+        assert detail["name"] == "Ronnie"
+
+    def test_gender_from_entire_male_text(self):
+        """Some dogs lack Sex field but have 'Entire male' in text."""
+        html = """
+        <title>Ziggy \u2014 Wythall Animal Sanctuary</title>
+        <h4><strong>AGE:</strong> 1 Year</h4>
+        <h4><strong>BREED: </strong> Mixed breed</h4>
+        <p>Entire male - I will be rehomed with a neuter contract</p>
+        """
+        detail = WythallChecker._parse_detail(html, "Ziggy")
+        assert detail["age"] == "1 Year"
+        assert detail["breed"] == "Mixed breed"
+        assert detail["gender"] == "Male"
+
     def test_extracts_photo_from_squarespace_cdn(self):
         """Photo URL from Squarespace CDN image."""
         html = """

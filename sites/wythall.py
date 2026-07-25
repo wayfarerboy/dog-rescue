@@ -148,26 +148,92 @@ class WythallChecker(SiteChecker):
                 if m:
                     result["name"] = m.group(1).strip().strip("!")
 
-        # Parse the "More About Me" section: "Label - Value" on each line
-        for line in lines:
-            stripped = line.strip()
-            if not stripped:
-                continue
+        # Parse the "More About Me" section.
+        # Real Squarespace pages use <li><p><strong>Label</strong> -Value</p></li>.
+        # The heading is sometimes <h3>, sometimes <p><strong>.
+        # Test fixtures use flat text with "Label - Value" lines.
+        more_heading = soup.find(
+            ["h3", "strong"],
+            string=re.compile(r"More About Me", re.IGNORECASE),
+        )
+        if more_heading:
+            ul = more_heading.find_next("ul")
+            if ul:
+                for li in ul.select("li"):
+                    strong = li.find("strong")
+                    if not strong:
+                        continue
+                    label = strong.get_text(strip=True).rstrip("-").strip().lower()
+                    # Get text after the <strong> tag
+                    value_parts: list[str] = []
+                    for sibling in strong.next_siblings:
+                        if hasattr(sibling, "get_text"):
+                            value_parts.append(sibling.get_text(strip=True))
+                        elif isinstance(sibling, str):
+                            value_parts.append(sibling.strip())
+                    value = " ".join(p for p in value_parts if p).strip()
+                    # Strip leading dash if present (from "-Value")
+                    value = re.sub(r"^\s*-\s*", "", value).strip()
 
-            # Match "Label - Value" or "Label -Value" pattern
-            m = re.match(r"([A-Za-z][A-Za-z /\-&]+?)\s*-\s*(.+)", stripped)
-            if not m:
-                continue
+                    if label == "breed":
+                        result["breed"] = value
+                    elif label == "sex":
+                        result["gender"] = value
+                    elif label == "age":
+                        result["age"] = value
+        else:
+            # Check for h4-based format: <h4><strong>AGE:</strong> 1 Year</h4>
+            # Used by some dog profiles (Ronnie, Ziggy).
+            h4_found = False
+            for h4 in soup.select("h4"):
+                strong = h4.find("strong")
+                if not strong:
+                    continue
+                label = strong.get_text(strip=True).rstrip(":").strip().lower()
+                # Get text after the <strong> within the h4
+                value_parts: list[str] = []
+                for sibling in strong.next_siblings:
+                    if hasattr(sibling, "get_text"):
+                        value_parts.append(sibling.get_text(strip=True))
+                    elif isinstance(sibling, str):
+                        value_parts.append(sibling.strip())
+                value = " ".join(p for p in value_parts if p).strip()
 
-            label = m.group(1).strip().lower()
-            value = m.group(2).strip()
+                if label == "breed":
+                    result["breed"] = value
+                    h4_found = True
+                elif label == "age":
+                    result["age"] = value
+                    h4_found = True
+                elif label in ("sex", "gender"):
+                    result["gender"] = value
+                    h4_found = True
 
-            if label == "breed":
-                result["breed"] = value
-            elif label == "sex":
-                result["gender"] = value
-            elif label == "age":
-                result["age"] = value
+            if not h4_found:
+                # Fallback: parse flat text with "Label - Value" lines (test fixtures)
+                for line in lines:
+                    stripped = line.strip()
+                    if not stripped:
+                        continue
+                    m = re.match(r"([A-Za-z][A-Za-z /\-&]+?)\s*-\s*(.+)", stripped)
+                    if not m:
+                        continue
+                    label = m.group(1).strip().lower()
+                    value = m.group(2).strip()
+                    if label == "breed":
+                        result["breed"] = value
+                    elif label == "sex":
+                        result["gender"] = value
+                    elif label == "age":
+                        result["age"] = value
+
+        # Gender fallback: look for "Entire male" / "Entire female" text
+        if not result["gender"]:
+            text_lower = body_text.lower()
+            if "entire male" in text_lower:
+                result["gender"] = "Male"
+            elif "entire female" in text_lower:
+                result["gender"] = "Female"
 
         # Status detection: look for foster/rehome/adoption indicators
         text_lower = body_text.lower()
