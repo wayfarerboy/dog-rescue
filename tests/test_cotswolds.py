@@ -52,9 +52,11 @@ class TestParseDetailPage:
           </div>
         </div>
         """
-        age, breed = CotswoldsChecker._parse_detail_page(html)
+        age, breed, location, photo_url = CotswoldsChecker._parse_detail_page(html)
         assert age == "1.5 years old"
         assert breed == "Patterdale Terrier X"
+        assert location == ""
+        assert photo_url == ""
 
     def test_extracts_age_months(self):
         html = """
@@ -69,9 +71,11 @@ class TestParseDetailPage:
           </div>
         </div>
         """
-        age, breed = CotswoldsChecker._parse_detail_page(html)
+        age, breed, location, photo_url = CotswoldsChecker._parse_detail_page(html)
         assert age == "6 months old"
         assert breed == "Labrador"
+        assert location == ""
+        assert photo_url == ""
 
     def test_missing_age_returns_empty(self):
         html = """
@@ -79,9 +83,11 @@ class TestParseDetailPage:
           <div class="vehica-car-attributes__name">Breed:: Spaniel</div>
         </div>
         """
-        age, breed = CotswoldsChecker._parse_detail_page(html)
+        age, breed, location, photo_url = CotswoldsChecker._parse_detail_page(html)
         assert age == ""
         assert breed == "Spaniel"
+        assert location == ""
+        assert photo_url == ""
 
     def test_missing_breed_returns_empty(self):
         html = """
@@ -89,9 +95,98 @@ class TestParseDetailPage:
           <div class="vehica-car-attributes__name">Age:: 2 years old</div>
         </div>
         """
-        age, breed = CotswoldsChecker._parse_detail_page(html)
+        age, breed, location, photo_url = CotswoldsChecker._parse_detail_page(html)
         assert age == "2 years old"
         assert breed == ""
+        assert location == ""
+        assert photo_url == ""
+
+    def test_extracts_location(self):
+        """Location is extracted from .vehica-address span."""
+        html = """
+        <div class="vehica-car-attributes">
+          <div class="vehica-car-attributes__name">Age:: 6 months old</div>
+          <div class="vehica-car-attributes__name">Breed:: Terrier</div>
+        </div>
+        <div class="vehica-address">
+          <a href="https://maps.google.com/?q=Test+Location">
+            <span>Cambridge, Gloucestershire, GL2 7AS</span>
+          </a>
+        </div>
+        """
+        age, breed, location, photo_url = CotswoldsChecker._parse_detail_page(html)
+        assert age == "6 months old"
+        assert breed == "Terrier"
+        assert location == "Cambridge, Gloucestershire, GL2 7AS"
+        assert photo_url == ""
+
+    def test_extracts_photo_url(self):
+        """Photo URL is extracted from first .vehica-car-gallery img."""
+        html = """
+        <div class="vehica-car-attributes">
+          <div class="vehica-car-attributes__name">Age:: 1 year old</div>
+          <div class="vehica-car-attributes__name">Breed:: Lab</div>
+        </div>
+        <div class="vehica-car-gallery">
+          <img src="https://example.org/dog1.jpg" />
+          <img src="https://example.org/dog2.jpg" />
+        </div>
+        """
+        age, breed, location, photo_url = CotswoldsChecker._parse_detail_page(html)
+        assert age == "1 year old"
+        assert breed == "Lab"
+        assert location == ""
+        assert photo_url == "https://example.org/dog1.jpg"
+
+    def test_extracts_all_fields(self):
+        """All four fields populated from a full detail page."""
+        html = """
+        <div class="vehica-car-attributes">
+          <div class="vehica-car-attributes__name">Age:: 3 months old</div>
+          <div class="vehica-car-attributes__name">Breed:: Cocker Spaniel</div>
+        </div>
+        <div class="vehica-address">
+          <a href="https://maps.google.com/?q=Test">
+            <span>Gloucester</span>
+          </a>
+        </div>
+        <div class="vehica-car-gallery">
+          <img src="https://example.org/puppy.jpg" />
+        </div>
+        """
+        age, breed, location, photo_url = CotswoldsChecker._parse_detail_page(html)
+        assert age == "3 months old"
+        assert breed == "Cocker Spaniel"
+        assert location == "Gloucester"
+        assert photo_url == "https://example.org/puppy.jpg"
+
+    def test_missing_location_returns_empty(self):
+        """No .vehica-address means empty location."""
+        html = """
+        <div class="vehica-car-attributes">
+          <div class="vehica-car-attributes__name">Age:: 2 years old</div>
+        </div>
+        <div class="vehica-car-gallery">
+          <img src="https://example.org/dog.jpg" />
+        </div>
+        """
+        _age, _breed, location, photo_url = CotswoldsChecker._parse_detail_page(html)
+        assert location == ""
+        assert photo_url == "https://example.org/dog.jpg"
+
+    def test_missing_photo_returns_empty(self):
+        """No .vehica-car-gallery img means empty photo_url."""
+        html = """
+        <div class="vehica-car-attributes">
+          <div class="vehica-car-attributes__name">Age:: 1 year old</div>
+        </div>
+        <div class="vehica-address">
+          <span>Somewhere</span>
+        </div>
+        """
+        _age, _breed, location, photo_url = CotswoldsChecker._parse_detail_page(html)
+        assert location == "Somewhere"
+        assert photo_url == ""
 
 
 class TestParseListingCards:
@@ -293,6 +388,12 @@ class TestParse:
           <div class="vehica-car-attributes__name">Age:: 6 months old</div>
           <div class="vehica-car-attributes__name">Breed:: Spaniel</div>
         </div>
+        <div class="vehica-address">
+          <span>Cambridge</span>
+        </div>
+        <div class="vehica-car-gallery">
+          <img src="https://example.org/luna.jpg" />
+        </div>
         """
         c = CotswoldsChecker(str(tmp_path))
         with patch.object(c, "_fetch_detail_page", return_value=detail_html):
@@ -304,6 +405,8 @@ class TestParse:
         assert d.status == "Available"
         assert d.age == "6 months old"
         assert d.breed == "Spaniel"
+        assert d.location == "Cambridge"
+        assert d.photo_url == "https://example.org/luna.jpg"
         assert d.url == "https://cotswoldsdogsandcatshome.org.uk/animals/luna/"
 
     def test_female_over_12_months_filtered_out(self, tmp_path):
@@ -354,12 +457,20 @@ class TestParse:
           <div class="vehica-car-attributes__name">Age:: 12 months old</div>
           <div class="vehica-car-attributes__name">Breed:: Pug</div>
         </div>
+        <div class="vehica-address">
+          <span>Gloucester</span>
+        </div>
+        <div class="vehica-car-gallery">
+          <img src="https://example.org/pup.jpg" />
+        </div>
         """
         c = CotswoldsChecker(str(tmp_path))
         with patch.object(c, "_fetch_detail_page", return_value=detail_html):
             dogs = c.parse(listing_html)
         assert len(dogs) == 1
         assert dogs[0].name == "Pup"
+        assert dogs[0].location == "Gloucester"
+        assert dogs[0].photo_url == "https://example.org/pup.jpg"
 
     def test_multiple_cards_mixed(self, tmp_path):
         """Only female under 12 months should pass."""
@@ -408,11 +519,23 @@ class TestParse:
                 return """<div class="vehica-car-attributes">
                   <div class="vehica-car-attributes__name">Age:: 6 months old</div>
                   <div class="vehica-car-attributes__name">Breed:: Spaniel</div>
+                </div>
+                <div class="vehica-address">
+                  <span>Cambridge</span>
+                </div>
+                <div class="vehica-car-gallery">
+                  <img src="https://example.org/luna.jpg" />
                 </div>"""
             if "daisy" in url:
                 return """<div class="vehica-car-attributes">
                   <div class="vehica-car-attributes__name">Age:: 3 years old</div>
                   <div class="vehica-car-attributes__name">Breed:: Terrier</div>
+                </div>
+                <div class="vehica-address">
+                  <span>Gloucester</span>
+                </div>
+                <div class="vehica-car-gallery">
+                  <img src="https://example.org/daisy.jpg" />
                 </div>"""
             return ""
 
@@ -422,3 +545,5 @@ class TestParse:
         # Luna: female, 6 months -> included.
         assert len(dogs) == 1
         assert dogs[0].name == "Luna"
+        assert dogs[0].location == "Cambridge"
+        assert dogs[0].photo_url == "https://example.org/luna.jpg"

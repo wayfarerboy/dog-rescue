@@ -38,9 +38,9 @@ class CotswoldsChecker(SiteChecker):
             if card["gender"] != "Female":
                 continue
 
-            # Fetch the detail page for age and breed
+            # Fetch the detail page for age, breed, location, and photo
             detail_html = self._fetch_detail_page(card["url"])
-            age, breed = self._parse_detail_page(detail_html)
+            age, breed, location, photo_url = self._parse_detail_page(detail_html)
 
             # Post-scrape filter: age ≤ 12 months
             age_months = self._parse_age_months(age)
@@ -55,6 +55,8 @@ class CotswoldsChecker(SiteChecker):
                     breed=breed,
                     url=card["url"],
                     status=card["status"],
+                    location=location,
+                    photo_url=photo_url,
                 )
             )
 
@@ -116,11 +118,16 @@ class CotswoldsChecker(SiteChecker):
         return cards
 
     @staticmethod
-    def _parse_detail_page(html: str) -> tuple[str, str]:
-        """Extract age and breed from a detail page. Returns (age, breed)."""
+    def _parse_detail_page(html: str) -> tuple[str, str, str, str]:
+        """Extract age, breed, location, and photo_url from a detail page.
+
+        Returns (age, breed, location, photo_url).
+        """
         soup = BeautifulSoup(html, "html.parser")
         age = ""
         breed = ""
+        location = ""
+        photo_url = ""
 
         for attr in soup.select(".vehica-car-attributes__name"):
             text = attr.get_text(strip=True)
@@ -129,7 +136,17 @@ class CotswoldsChecker(SiteChecker):
             elif text.startswith("Breed::"):
                 breed = text.removeprefix("Breed::").strip()
 
-        return age, breed
+        # Location: .vehica-address span
+        addr_span = soup.select_one(".vehica-address span")
+        if addr_span:
+            location = addr_span.get_text(strip=True)
+
+        # Photo: first .vehica-car-gallery img
+        gallery_img = soup.select_one(".vehica-car-gallery img")
+        if gallery_img:
+            photo_url = gallery_img.get("src", "")
+
+        return age, breed, location, photo_url
 
     @staticmethod
     def _parse_age_months(age_str: str) -> int:
