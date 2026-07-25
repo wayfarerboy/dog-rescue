@@ -44,11 +44,13 @@ def main() -> None:
     from sites.dogs_trust import DogsTrustChecker
     from sites.many_tears import ManyTearsChecker
     from sites.scsr import SCSRChecker
+    from sites.spaniel_aid import SpanielAidChecker
 
     checkers = [
         ManyTearsChecker(str(DATA_DIR)),
         SCSRChecker(str(DATA_DIR)),
         DogsTrustChecker(str(DATA_DIR)),
+        SpanielAidChecker(str(DATA_DIR)),
     ]
 
     all_new: list[str] = []
