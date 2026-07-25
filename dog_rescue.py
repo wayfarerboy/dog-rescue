@@ -14,6 +14,8 @@ from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 from pathlib import Path
 
+from distance_lookup import MAX_DISTANCE_MILES_DEFAULT, DistanceLookup, filter_dogs_by_distance
+
 SCRIPT_DIR = Path(__file__).resolve().parent
 DATA_DIR = SCRIPT_DIR / "data"
 
@@ -63,6 +65,17 @@ def main() -> None:
         print("Error: EMAIL not set in .env", file=sys.stderr)
         sys.exit(1)
 
+    # Distance filtering setup
+    api_key = env.get("GOOGLE_MAPS_API_KEY", "")
+    max_distance_str = env.get("MAX_DISTANCE_MILES", "")
+    max_distance: float | None = None
+    if max_distance_str:
+        try:
+            max_distance = float(max_distance_str)
+        except ValueError:
+            max_distance = MAX_DISTANCE_MILES_DEFAULT
+    distance_lookup = DistanceLookup(str(DATA_DIR), api_key=api_key)
+
     # Import site checkers from shared registry
     from sites.base import Dog
     from sites.registry import get_checkers
@@ -77,6 +90,14 @@ def main() -> None:
             print(f"Checking {checker.site_name}...", file=sys.stderr)
             new_dogs = checker.check()
             print(f"  Found {len(new_dogs)} new dog(s)", file=sys.stderr)
+
+            if new_dogs and max_distance is not None:
+                before = len(new_dogs)
+                new_dogs = filter_dogs_by_distance(new_dogs, distance_lookup, max_distance)
+                removed = before - len(new_dogs)
+                if removed:
+                    print(f"  Filtered out {removed} dog(s) beyond {max_distance} miles",
+                          file=sys.stderr)
 
             if new_dogs:
                 section = checker.format_section(
