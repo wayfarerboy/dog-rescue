@@ -63,25 +63,11 @@ def main() -> None:
         print("Error: EMAIL not set in .env", file=sys.stderr)
         sys.exit(1)
 
-    # Import site checkers
+    # Import site checkers from shared registry
     from sites.base import Dog
-    from sites.cotswolds import CotswoldsChecker
-    from sites.dogs_trust import DogsTrustChecker
-    from sites.jerry_green import JerryGreenChecker
-    from sites.many_tears import ManyTearsChecker
-    from sites.rspca_brighton import RSPCABrightonChecker
-    from sites.scsr import SCSRChecker
-    from sites.south_east_dog_rescue import SouthEastDogRescueChecker
+    from sites.registry import get_checkers
 
-    checkers = [
-        ManyTearsChecker(str(DATA_DIR)),
-        SCSRChecker(str(DATA_DIR)),
-        DogsTrustChecker(str(DATA_DIR)),
-        JerryGreenChecker(str(DATA_DIR)),
-        SouthEastDogRescueChecker(str(DATA_DIR)),
-        CotswoldsChecker(str(DATA_DIR)),
-        RSPCABrightonChecker(str(DATA_DIR)),
-    ]
+    checkers = get_checkers(str(DATA_DIR))
 
     text_sections: list[str] = []
     html_sites: list[tuple[str, list[Dog]]] = []
