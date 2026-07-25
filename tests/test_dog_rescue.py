@@ -58,6 +58,7 @@ class TestMain:
             patch("sites.many_tears.ManyTearsChecker.check", return_value=[]),
             patch("sites.scsr.SCSRChecker.check", return_value=[]),
             patch("sites.dogs_trust.DogsTrustChecker.check", return_value=[]),
+            patch("sites.jerry_green.JerryGreenChecker.check", return_value=[]),
             patch("builtins.print") as mock_print,
         ):
             main()
@@ -88,6 +89,7 @@ class TestMain:
             ),
             patch("sites.scsr.SCSRChecker.check", return_value=[]),
             patch("sites.dogs_trust.DogsTrustChecker.check", return_value=[]),
+            patch("sites.jerry_green.JerryGreenChecker.check", return_value=[]),
             patch("subprocess.run") as mock_run,
         ):
             main()
@@ -122,6 +124,7 @@ class TestMain:
             ),
             patch("sites.scsr.SCSRChecker.check", return_value=[]),
             patch("sites.dogs_trust.DogsTrustChecker.check", return_value=[]),
+            patch("sites.jerry_green.JerryGreenChecker.check", return_value=[]),
             patch("subprocess.run", side_effect=FileNotFoundError),
             pytest.raises(SystemExit) as exc,
         ):
@@ -153,6 +156,7 @@ class TestMain:
             ),
             patch("sites.scsr.SCSRChecker.check", return_value=[]),
             patch("sites.dogs_trust.DogsTrustChecker.check", return_value=[]),
+            patch("sites.jerry_green.JerryGreenChecker.check", return_value=[]),
             patch(
                 "subprocess.run",
                 side_effect=subprocess.CalledProcessError(1, "msmtp"),
@@ -190,6 +194,7 @@ class TestMain:
                 return_value="=== SCSR ===",
             ),
             patch("sites.dogs_trust.DogsTrustChecker.check", return_value=[]),
+            patch("sites.jerry_green.JerryGreenChecker.check", return_value=[]),
             patch("subprocess.run") as mock_run,
         ):
             main()
