@@ -142,6 +142,84 @@ class TestParse:
         assert d.breed == "Cocker Spaniel"
         assert d.location == "Cardiff"
 
+    def test_filters_reserved_status(self, tmp_path):
+        """Dog with status 'Reserved' should be excluded even if female puppy."""
+        html = """
+        <article class="scsr-finder-card">
+          <h3>Daisy</h3>
+          <div class="scsr-modern-status"><i></i>Reserved</div>
+          <div class="scsr-modern-info-box">
+            <i class="fa-venus-mars"></i><span>Female</span>
+          </div>
+          <div class="scsr-modern-info-box">
+            <i class="fa-calendar-days"></i><span>5 Months</span>
+          </div>
+          <div class="scsr-modern-info-box">
+            <i class="fa-dog"></i><span>Spaniel</span>
+          </div>
+          <div class="scsr-modern-info-box">
+            <i class="fa-location-dot"></i><span>Bristol</span>
+          </div>
+          <a class="scsr-modern-main-btn"
+             href="https://example.org/dogs/daisy"></a>
+        </article>
+        """
+        c = SCSRChecker(str(tmp_path))
+        assert c.parse(html) == []
+
+    def test_filters_for_foster_status(self, tmp_path):
+        """Dog with status 'For Foster' should be excluded even if female puppy."""
+        html = """
+        <article class="scsr-finder-card">
+          <h3>Poppy</h3>
+          <div class="scsr-modern-status"><i></i>For Foster</div>
+          <div class="scsr-modern-info-box">
+            <i class="fa-venus-mars"></i><span>Female</span>
+          </div>
+          <div class="scsr-modern-info-box">
+            <i class="fa-calendar-days"></i><span>3 Months</span>
+          </div>
+          <div class="scsr-modern-info-box">
+            <i class="fa-dog"></i><span>Cocker Spaniel</span>
+          </div>
+          <div class="scsr-modern-info-box">
+            <i class="fa-location-dot"></i><span>Wales</span>
+          </div>
+          <a class="scsr-modern-main-btn"
+             href="https://example.org/dogs/poppy"></a>
+        </article>
+        """
+        c = SCSRChecker(str(tmp_path))
+        assert c.parse(html) == []
+
+    def test_available_status_included(self, tmp_path):
+        """Dog with status 'Available' (female puppy) should be included."""
+        html = """
+        <article class="scsr-finder-card">
+          <h3>Molly</h3>
+          <div class="scsr-modern-status"><i></i>Available</div>
+          <div class="scsr-modern-info-box">
+            <i class="fa-venus-mars"></i><span>Female</span>
+          </div>
+          <div class="scsr-modern-info-box">
+            <i class="fa-calendar-days"></i><span>10 Months</span>
+          </div>
+          <div class="scsr-modern-info-box">
+            <i class="fa-dog"></i><span>Springer Spaniel</span>
+          </div>
+          <div class="scsr-modern-info-box">
+            <i class="fa-location-dot"></i><span>London</span>
+          </div>
+          <a class="scsr-modern-main-btn"
+             href="https://example.org/dogs/molly"></a>
+        </article>
+        """
+        c = SCSRChecker(str(tmp_path))
+        dogs = c.parse(html)
+        assert len(dogs) == 1
+        assert dogs[0].name == "Molly"
+        assert dogs[0].status == "Available"
+
     def test_multiple_mixed(self, tmp_path):
         html = """
         <article class="scsr-finder-card">

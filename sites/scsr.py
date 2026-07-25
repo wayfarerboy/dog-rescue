@@ -33,6 +33,10 @@ class SCSRChecker(SiteChecker):
             location = self._info_field(article, "location-dot")
             photo_url = self._photo_url(article)
 
+            # Filter: only available dogs
+            if status and status != "Available":
+                continue
+
             # Filter: female + month-based age only (under 1 year)
             if gender != "Female":
                 continue
