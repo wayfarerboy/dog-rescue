@@ -14,6 +14,7 @@ from pathlib import Path
 from sites.all_dogs_matter import AllDogsMatterChecker
 from sites.base import SiteChecker
 from sites.birch_hill import BirchHillChecker
+from sites.brighter_days import BrighterDaysChecker
 from sites.cheltenham import CheltenhamChecker
 from sites.cotswolds import CotswoldsChecker
 from sites.dogs_trust import DogsTrustChecker
@@ -56,6 +57,7 @@ def get_checkers(data_dir: str) -> list[SiteChecker]:
     return [
         AllDogsMatterChecker(data_dir),
         # BirchHillChecker(data_dir),  # Cloudflare blocks automated access
+        BrighterDaysChecker(data_dir),
         CheltenhamChecker(data_dir),
         CotswoldsChecker(data_dir),
         DogsTrustChecker(data_dir, max_distance_miles=max_dist),
