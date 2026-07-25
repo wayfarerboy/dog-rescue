@@ -29,8 +29,9 @@ def test_all_checkers_present() -> None:
         "Second Chance Spaniel Rescue",
         "South East Dog Rescue",
         "Spaniel Aid",
+        "Starfish Dog Rescue",
     ])
 
-    assert len(checkers) >= 17, f"Expected at least 17 checkers, got {len(checkers)}"
+    assert len(checkers) >= 18, f"Expected at least 18 checkers, got {len(checkers)}"
     missing = set(expected) ^ set(site_names)
     assert site_names == expected, f"Missing or unexpected checkers: {missing}"
