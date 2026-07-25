@@ -55,18 +55,22 @@ class TestMain:
         (tmp_path / ".env").write_text("EMAIL=test@example.com\n")
 
         with (
-            patch("sites.many_tears.ManyTearsChecker.check", return_value=[]),
-            patch("sites.scsr.SCSRChecker.check", return_value=[]),
+            patch("sites.all_dogs_matter.AllDogsMatterChecker.check", return_value=[]),
+            patch("sites.cotswolds.CotswoldsChecker.check", return_value=[]),
             patch("sites.dogs_trust.DogsTrustChecker.check", return_value=[]),
             patch("sites.jerry_green.JerryGreenChecker.check", return_value=[]),
+            patch("sites.many_tears.ManyTearsChecker.check", return_value=[]),
+            patch("sites.paws2rescue.Paws2RescueChecker.check", return_value=[]),
+            patch("sites.pro_dogs_direct.ProDogsDirectChecker.check", return_value=[]),
+            patch("sites.raystede.RaystedeChecker.check", return_value=[]),
+            patch("sites.rspca_brighton.RSPCABrightonChecker.check", return_value=[]),
+            patch("sites.rspca_leeds.RSPCALeedsChecker.check", return_value=[]),
+            patch("sites.scsr.SCSRChecker.check", return_value=[]),
             patch(
                 "sites.south_east_dog_rescue.SouthEastDogRescueChecker.check",
                 return_value=[],
             ),
-            patch("sites.cotswolds.CotswoldsChecker.check", return_value=[]),
-            patch(
-                "sites.rspca_brighton.RSPCABrightonChecker.check", return_value=[]
-            ),
+            patch("sites.spaniel_aid.SpanielAidChecker.check", return_value=[]),
             patch("builtins.print") as mock_print,
         ):
             main()
@@ -90,23 +94,27 @@ class TestMain:
 
         with (
             patch(
-                "sites.many_tears.ManyTearsChecker.check", return_value=[fake_dog]
+                "sites.all_dogs_matter.AllDogsMatterChecker.check", return_value=[fake_dog]
             ),
             patch(
-                "sites.many_tears.ManyTearsChecker.format_section",
+                "sites.all_dogs_matter.AllDogsMatterChecker.format_section",
                 return_value="=== Section ===",
             ),
-            patch("sites.scsr.SCSRChecker.check", return_value=[]),
+            patch("sites.cotswolds.CotswoldsChecker.check", return_value=[]),
             patch("sites.dogs_trust.DogsTrustChecker.check", return_value=[]),
             patch("sites.jerry_green.JerryGreenChecker.check", return_value=[]),
+            patch("sites.many_tears.ManyTearsChecker.check", return_value=[]),
+            patch("sites.paws2rescue.Paws2RescueChecker.check", return_value=[]),
+            patch("sites.pro_dogs_direct.ProDogsDirectChecker.check", return_value=[]),
+            patch("sites.raystede.RaystedeChecker.check", return_value=[]),
+            patch("sites.rspca_brighton.RSPCABrightonChecker.check", return_value=[]),
+            patch("sites.rspca_leeds.RSPCALeedsChecker.check", return_value=[]),
+            patch("sites.scsr.SCSRChecker.check", return_value=[]),
             patch(
                 "sites.south_east_dog_rescue.SouthEastDogRescueChecker.check",
                 return_value=[],
             ),
-            patch("sites.cotswolds.CotswoldsChecker.check", return_value=[]),
-            patch(
-                "sites.rspca_brighton.RSPCABrightonChecker.check", return_value=[]
-            ),
+            patch("sites.spaniel_aid.SpanielAidChecker.check", return_value=[]),
             patch("subprocess.run") as mock_run,
         ):
             main()
@@ -134,23 +142,28 @@ class TestMain:
 
         with (
             patch(
-                "sites.many_tears.ManyTearsChecker.check", return_value=[fake_dog]
+                "sites.all_dogs_matter.AllDogsMatterChecker.check",
+                return_value=[fake_dog],
             ),
             patch(
-                "sites.many_tears.ManyTearsChecker.format_section",
+                "sites.all_dogs_matter.AllDogsMatterChecker.format_section",
                 return_value="X",
             ),
-            patch("sites.scsr.SCSRChecker.check", return_value=[]),
+            patch("sites.cotswolds.CotswoldsChecker.check", return_value=[]),
             patch("sites.dogs_trust.DogsTrustChecker.check", return_value=[]),
             patch("sites.jerry_green.JerryGreenChecker.check", return_value=[]),
+            patch("sites.many_tears.ManyTearsChecker.check", return_value=[]),
+            patch("sites.paws2rescue.Paws2RescueChecker.check", return_value=[]),
+            patch("sites.pro_dogs_direct.ProDogsDirectChecker.check", return_value=[]),
+            patch("sites.raystede.RaystedeChecker.check", return_value=[]),
+            patch("sites.rspca_brighton.RSPCABrightonChecker.check", return_value=[]),
+            patch("sites.rspca_leeds.RSPCALeedsChecker.check", return_value=[]),
+            patch("sites.scsr.SCSRChecker.check", return_value=[]),
             patch(
                 "sites.south_east_dog_rescue.SouthEastDogRescueChecker.check",
                 return_value=[],
             ),
-            patch("sites.cotswolds.CotswoldsChecker.check", return_value=[]),
-            patch(
-                "sites.rspca_brighton.RSPCABrightonChecker.check", return_value=[]
-            ),
+            patch("sites.spaniel_aid.SpanielAidChecker.check", return_value=[]),
             patch("subprocess.run", side_effect=FileNotFoundError),
             pytest.raises(SystemExit) as exc,
         ):
@@ -175,23 +188,28 @@ class TestMain:
 
         with (
             patch(
-                "sites.many_tears.ManyTearsChecker.check", return_value=[fake_dog]
+                "sites.all_dogs_matter.AllDogsMatterChecker.check",
+                return_value=[fake_dog],
             ),
             patch(
-                "sites.many_tears.ManyTearsChecker.format_section",
+                "sites.all_dogs_matter.AllDogsMatterChecker.format_section",
                 return_value="X",
             ),
-            patch("sites.scsr.SCSRChecker.check", return_value=[]),
+            patch("sites.cotswolds.CotswoldsChecker.check", return_value=[]),
             patch("sites.dogs_trust.DogsTrustChecker.check", return_value=[]),
             patch("sites.jerry_green.JerryGreenChecker.check", return_value=[]),
+            patch("sites.many_tears.ManyTearsChecker.check", return_value=[]),
+            patch("sites.paws2rescue.Paws2RescueChecker.check", return_value=[]),
+            patch("sites.pro_dogs_direct.ProDogsDirectChecker.check", return_value=[]),
+            patch("sites.raystede.RaystedeChecker.check", return_value=[]),
+            patch("sites.rspca_brighton.RSPCABrightonChecker.check", return_value=[]),
+            patch("sites.rspca_leeds.RSPCALeedsChecker.check", return_value=[]),
+            patch("sites.scsr.SCSRChecker.check", return_value=[]),
             patch(
                 "sites.south_east_dog_rescue.SouthEastDogRescueChecker.check",
                 return_value=[],
             ),
-            patch("sites.cotswolds.CotswoldsChecker.check", return_value=[]),
-            patch(
-                "sites.rspca_brighton.RSPCABrightonChecker.check", return_value=[]
-            ),
+            patch("sites.spaniel_aid.SpanielAidChecker.check", return_value=[]),
             patch(
                 "subprocess.run",
                 side_effect=subprocess.CalledProcessError(1, "msmtp"),
@@ -219,9 +237,18 @@ class TestMain:
 
         with (
             patch(
-                "sites.many_tears.ManyTearsChecker.check",
+                "sites.all_dogs_matter.AllDogsMatterChecker.check",
                 side_effect=RuntimeError("boom"),
             ),
+            patch("sites.cotswolds.CotswoldsChecker.check", return_value=[]),
+            patch("sites.dogs_trust.DogsTrustChecker.check", return_value=[]),
+            patch("sites.jerry_green.JerryGreenChecker.check", return_value=[]),
+            patch("sites.many_tears.ManyTearsChecker.check", return_value=[]),
+            patch("sites.paws2rescue.Paws2RescueChecker.check", return_value=[]),
+            patch("sites.pro_dogs_direct.ProDogsDirectChecker.check", return_value=[]),
+            patch("sites.raystede.RaystedeChecker.check", return_value=[]),
+            patch("sites.rspca_brighton.RSPCABrightonChecker.check", return_value=[]),
+            patch("sites.rspca_leeds.RSPCALeedsChecker.check", return_value=[]),
             patch(
                 "sites.scsr.SCSRChecker.check", return_value=[fake_dog]
             ),
@@ -229,16 +256,11 @@ class TestMain:
                 "sites.scsr.SCSRChecker.format_section",
                 return_value="=== SCSR ===",
             ),
-            patch("sites.dogs_trust.DogsTrustChecker.check", return_value=[]),
-            patch("sites.jerry_green.JerryGreenChecker.check", return_value=[]),
             patch(
                 "sites.south_east_dog_rescue.SouthEastDogRescueChecker.check",
                 return_value=[],
             ),
-            patch("sites.cotswolds.CotswoldsChecker.check", return_value=[]),
-            patch(
-                "sites.rspca_brighton.RSPCABrightonChecker.check", return_value=[]
-            ),
+            patch("sites.spaniel_aid.SpanielAidChecker.check", return_value=[]),
             patch("subprocess.run") as mock_run,
         ):
             main()
