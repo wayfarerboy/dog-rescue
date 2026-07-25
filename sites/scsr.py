@@ -31,6 +31,7 @@ class SCSRChecker(SiteChecker):
             age = self._info_field(article, "calendar-days")
             breed = self._info_field(article, "dog")
             location = self._info_field(article, "location-dot")
+            photo_url = self._photo_url(article)
 
             # Filter: female + month-based age only (under 1 year)
             if gender != "Female":
@@ -47,6 +48,7 @@ class SCSRChecker(SiteChecker):
                     url=link,
                     status=status,
                     location=location,
+                    photo_url=photo_url,
                 )
             )
 
@@ -87,4 +89,12 @@ class SCSRChecker(SiteChecker):
                 span = info_box.select_one("span")
                 if span:
                     return span.get_text(strip=True)
+        return ""
+
+    @staticmethod
+    def _photo_url(article) -> str:
+        """Extract photo URL from the card's main image."""
+        img = article.select_one(".scsr-modern-card-image img")
+        if img:
+            return img.get("src", "")
         return ""

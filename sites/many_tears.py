@@ -1,5 +1,7 @@
 """Many Tears Rescue site checker."""
 
+import re
+
 import requests
 from bs4 import BeautifulSoup
 
@@ -35,6 +37,7 @@ class ManyTearsChecker(SiteChecker):
             age = self._text(card, ".icon.age")
             sex = self._text(card, ".icon.sex")
             location = self._text(card, ".icon.location")
+            photo_url = self._image_url(card)
 
             dogs.append(
                 Dog(
@@ -45,6 +48,7 @@ class ManyTearsChecker(SiteChecker):
                     url=f"https://www.manytearsrescue.org{href}",
                     status="",
                     location=location,
+                    photo_url=photo_url,
                 )
             )
 
@@ -54,3 +58,16 @@ class ManyTearsChecker(SiteChecker):
     def _text(soup, selector: str) -> str:
         el = soup.select_one(selector)
         return el.get_text(strip=True) if el else ""
+
+    @staticmethod
+    def _image_url(card) -> str:
+        """Extract image URL from background-image style on .animal-card__image."""
+        img_div = card.select_one(".animal-card__image")
+        if not img_div:
+            return ""
+        style = img_div.get("style", "")
+        match = re.search(r"url\('([^']+)'\)", style)
+        if match:
+            path = match.group(1)
+            return f"https://www.manytearsrescue.org{path}"
+        return ""

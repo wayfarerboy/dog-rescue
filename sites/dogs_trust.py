@@ -41,6 +41,11 @@ class DogsTrustChecker(SiteChecker):
           size
           centreName
           status
+          media {
+            images {
+              src
+            }
+          }
         }
       }
     }
@@ -97,6 +102,7 @@ class DogsTrustChecker(SiteChecker):
             url = f"https://www.dogstrust.org.uk{d.get('url', '')}"
             gender = "Female" if d.get("gender") == "F" else d.get("gender", "")
             age_str = self._compute_age(dob_str)
+            photo_url = self._first_image(d)
 
             dogs.append(
                 Dog(
@@ -107,10 +113,20 @@ class DogsTrustChecker(SiteChecker):
                     url=url,
                     status=status,
                     location=centre,
+                    photo_url=photo_url,
                 )
             )
 
         return dogs
+
+    @staticmethod
+    def _first_image(d: dict) -> str:
+        """Return the src of the first image from media, or empty string."""
+        media = d.get("media") or {}
+        images = media.get("images") or []
+        if images:
+            return images[0].get("src", "")
+        return ""
 
     @staticmethod
     def _compute_age(dob_str: str) -> str:
