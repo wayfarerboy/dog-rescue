@@ -15,6 +15,7 @@ from sites.all_dogs_matter import AllDogsMatterChecker
 from sites.base import SiteChecker
 from sites.birch_hill import BirchHillChecker
 from sites.blue_cross import BlueCrossChecker
+from sites.brighter_days import BrighterDaysChecker
 from sites.cheltenham import CheltenhamChecker
 from sites.cotswolds import CotswoldsChecker
 from sites.dogs_trust import DogsTrustChecker
@@ -30,12 +31,9 @@ from sites.rspca_leeds import RSPCALeedsChecker
 from sites.scsr import SCSRChecker
 from sites.south_east_dog_rescue import SouthEastDogRescueChecker
 from sites.spaniel_aid import SpanielAidChecker
-<<<<<<< HEAD
 from sites.starfish import StarfishChecker
-=======
 from sites.teckels import TeckelsChecker
 from sites.wythall import WythallChecker
->>>>>>> agent/dev/issue-32
 
 
 def _load_max_distance(data_dir: str) -> float | None:
@@ -64,6 +62,7 @@ def get_checkers(data_dir: str) -> list[SiteChecker]:
     return [
         AllDogsMatterChecker(data_dir),
         # BirchHillChecker(data_dir),  # Cloudflare blocks automated access
+        BrighterDaysChecker(data_dir),
         CheltenhamChecker(data_dir),
         CotswoldsChecker(data_dir),
         DogsTrustChecker(data_dir, max_distance_miles=max_dist),
