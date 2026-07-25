@@ -7,7 +7,7 @@
   "subagents": {
     "agentOverrides": {
       "issue-handler": {
-        "model": "anthropic/claude-sonnet-4"
+        "model": "deepseek/deepseek-v4-pro"
       }
     },
     "disableBuiltins": false
