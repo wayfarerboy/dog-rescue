@@ -59,6 +59,29 @@ class ManyTearsChecker(SiteChecker):
         el = soup.select_one(selector)
         return el.get_text(strip=True) if el else ""
 
+    def extract_from_profile(self, html: str) -> dict[str, str]:
+        """Extract photo_url and status from a Many Tears profile page."""
+        result: dict[str, str] = {}
+
+        # Photo from og:image meta tag
+        match = re.search(
+            r'<meta\s+property="og:image"\s+content="([^"]+)"',
+            html,
+        )
+        if match:
+            path = match.group(1)
+            result["photo_url"] = f"https://www.manytearsrescue.org{path}"
+
+        # Status text (e.g. "Available for Adoption", "Reserved")
+        status_match = re.search(
+            r'(Available for Adoption|Reserved|Foster|Home Found)',
+            html,
+        )
+        if status_match:
+            result["status"] = status_match.group(1)
+
+        return result
+
     @staticmethod
     def _image_url(card) -> str:
         """Extract image URL from background-image style on .animal-card__image."""

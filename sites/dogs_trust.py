@@ -128,6 +128,29 @@ class DogsTrustChecker(SiteChecker):
             return images[0].get("src", "")
         return ""
 
+    def extract_from_profile(self, html: str) -> dict[str, str]:
+        """Extract photo_url from a Dogs Trust profile page.
+
+        The page is Gatsby-rendered; the first dog image lives in a
+        <picture> inside the hero carousel with path
+        /images/800x600/dogs/{refId}/...
+        """
+        import re
+
+        result: dict[str, str] = {}
+
+        # Match the first dog-specific image in the carousel.
+        # The src contains the full image URL; srcSet variants have .webp appended.
+        # We want the non-webp version (jpg/png) — look for src (not srcSet).
+        match = re.search(
+            r'src="(https://www\.dogstrust\.org\.uk/images/800x600/dogs/\d+/[^"]+)"',
+            html,
+        )
+        if match:
+            result["photo_url"] = match.group(1)
+
+        return result
+
     @staticmethod
     def _compute_age(dob_str: str) -> str:
         """Compute a human-readable age from a YYYY-MM-DD date string."""

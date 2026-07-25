@@ -7,6 +7,11 @@ from dataclasses import dataclass
 from pathlib import Path
 
 
+# Ordered field names matching as_line() output
+FIELD_NAMES = ["status", "name", "age", "gender", "breed", "location", "photo_url", "url"]
+FIELD_COUNT = len(FIELD_NAMES)
+
+
 @dataclass
 class Dog:
     """A dog available for adoption."""
@@ -93,6 +98,15 @@ class SiteChecker(ABC):
         if new:
             self._save_current(dogs)
         return new
+
+    def extract_from_profile(self, html: str) -> dict[str, str]:
+        """Extract fields from a dog's profile/detail page HTML.
+
+        Subclasses override this to scrape per-site profile pages.
+        Return a dict of field_name→value. Only fields you can extract
+        need to be present; the repair script fills in whatever is provided.
+        """
+        return {}
 
     def format_section(self, new_dogs: list[Dog], heading: str, columns: str) -> str:
         """Format new dogs as a plain-text email section."""
