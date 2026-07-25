@@ -19,6 +19,7 @@ from sites.cheltenham import CheltenhamChecker
 from sites.cotswolds import CotswoldsChecker
 from sites.dogs_trust import DogsTrustChecker
 from sites.forest_dog_rescue import ForestDogRescueChecker
+from sites.gsdr import GsdrChecker
 from sites.jerry_green import JerryGreenChecker
 from sites.many_tears import ManyTearsChecker
 from sites.paws2rescue import Paws2RescueChecker
@@ -29,7 +30,12 @@ from sites.rspca_leeds import RSPCALeedsChecker
 from sites.scsr import SCSRChecker
 from sites.south_east_dog_rescue import SouthEastDogRescueChecker
 from sites.spaniel_aid import SpanielAidChecker
+<<<<<<< HEAD
 from sites.starfish import StarfishChecker
+=======
+from sites.teckels import TeckelsChecker
+from sites.wythall import WythallChecker
+>>>>>>> agent/dev/issue-32
 
 
 def _load_max_distance(data_dir: str) -> float | None:
@@ -75,6 +81,9 @@ def get_checkers(data_dir: str) -> list[SiteChecker]:
         BlueCrossChecker(data_dir, "bromsgrove"),
         BlueCrossChecker(data_dir, "burford"),
         StarfishChecker(data_dir),
+        TeckelsChecker(data_dir),
+        WythallChecker(data_dir),
+        GsdrChecker(data_dir),
     ]
 
 

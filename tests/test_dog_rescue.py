@@ -73,6 +73,9 @@ class TestMain:
             ),
             patch("sites.spaniel_aid.SpanielAidChecker.check", return_value=[]),
             patch("sites.starfish.StarfishChecker.check", return_value=[]),
+            patch("sites.teckels.TeckelsChecker.check", return_value=[]),
+            patch("sites.wythall.WythallChecker.check", return_value=[]),
+            patch("sites.gsdr.GsdrChecker.check", return_value=[]),
             patch("builtins.print") as mock_print,
         ):
             main()
@@ -166,6 +169,9 @@ class TestMain:
                 return_value=[],
             ),
             patch("sites.spaniel_aid.SpanielAidChecker.check", return_value=[]),
+            patch("sites.teckels.TeckelsChecker.check", return_value=[]),
+            patch("sites.wythall.WythallChecker.check", return_value=[]),
+            patch("sites.gsdr.GsdrChecker.check", return_value=[]),
             patch("subprocess.run", side_effect=FileNotFoundError),
             pytest.raises(SystemExit) as exc,
         ):
@@ -212,6 +218,9 @@ class TestMain:
                 return_value=[],
             ),
             patch("sites.spaniel_aid.SpanielAidChecker.check", return_value=[]),
+            patch("sites.teckels.TeckelsChecker.check", return_value=[]),
+            patch("sites.wythall.WythallChecker.check", return_value=[]),
+            patch("sites.gsdr.GsdrChecker.check", return_value=[]),
             patch(
                 "subprocess.run",
                 side_effect=subprocess.CalledProcessError(1, "msmtp"),
@@ -263,6 +272,9 @@ class TestMain:
                 return_value=[],
             ),
             patch("sites.spaniel_aid.SpanielAidChecker.check", return_value=[]),
+            patch("sites.teckels.TeckelsChecker.check", return_value=[]),
+            patch("sites.wythall.WythallChecker.check", return_value=[]),
+            patch("sites.gsdr.GsdrChecker.check", return_value=[]),
             patch("subprocess.run") as mock_run,
         ):
             main()
@@ -322,6 +334,9 @@ class TestMain:
                 return_value=[],
             ),
             patch("sites.spaniel_aid.SpanielAidChecker.check", return_value=[]),
+            patch("sites.teckels.TeckelsChecker.check", return_value=[]),
+            patch("sites.wythall.WythallChecker.check", return_value=[]),
+            patch("sites.gsdr.GsdrChecker.check", return_value=[]),
             patch.object(DistanceLookup, "_load", return_value=None),
             patch.object(
                 DistanceLookup,
