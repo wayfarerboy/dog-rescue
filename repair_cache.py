@@ -145,7 +145,7 @@ def repair_entry(
         padded.append("")
 
     for idx, name in sorted(missing.items()):
-        if name in extracted and extracted[name]:
+        if extracted.get(name):
             old = padded[idx] if idx < len(padded) else "(missing)"
             padded[idx] = extracted[name]
             print(f"    Repaired {name}: '{old}' → '{extracted[name]}'")
@@ -161,7 +161,7 @@ def repair_file(
 ) -> int:
     """Repair a single data file. Returns count of entries repaired."""
     if not data_path.exists():
-        print(f"  (no cached data — skipping)")
+        print("  (no cached data — skipping)")
         return 0
 
     lines = [
