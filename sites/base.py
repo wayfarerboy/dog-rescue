@@ -160,7 +160,8 @@ class SiteChecker(ABC):
 
 def _esc(text: str) -> str:
     """Escape HTML entities in a string."""
-    return text.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;").replace('"', "&quot;")
+    return (text.replace("&", "&amp;").replace("<", "&lt;")
+            .replace(">", "&gt;").replace('"', "&quot;"))
 
 
 def _photo_tag(photo_url: str) -> str:

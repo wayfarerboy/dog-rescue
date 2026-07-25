@@ -24,7 +24,8 @@ _HTML_WRAPPER = """\
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 </head>
-<body style="margin:0;padding:16px;background:#f5f5f5;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif">
+<body style="margin:0;padding:16px;background:#f5f5f5;
+      font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif">
 <div style="max-width:480px;margin:0 auto;background:#fff;border-radius:4px;overflow:hidden">
 <div style="padding:16px">
 <h1 style="font-size:18px;font-weight:700;color:#222;margin:0 0 16px 0">{subject}</h1>
