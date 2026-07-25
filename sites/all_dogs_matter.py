@@ -54,9 +54,9 @@ class AllDogsMatterChecker(SiteChecker):
             if not content:
                 continue
 
-            # Check all paragraphs for "adopted" — skip if found
+            # Check all paragraphs for "adopted" or "reserved" — skip if found
             paragraphs = [p.get_text(strip=True) for p in content.select("p")]
-            if any("adopted" in p.lower() for p in paragraphs):
+            if any("adopted" in p.lower() or "reserved" in p.lower() for p in paragraphs):
                 continue
             # Cards with no paragraph have no data to extract
             if not paragraphs:
@@ -92,7 +92,7 @@ class AllDogsMatterChecker(SiteChecker):
                     gender=gender,
                     breed=breed,
                     url=href,
-                    status="",
+                    status="Available",
                     location=location,
                     photo_url=photo_url,
                 )

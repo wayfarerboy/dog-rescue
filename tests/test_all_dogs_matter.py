@@ -209,6 +209,97 @@ class TestParse:
         assert dogs[0].gender == ""
         assert dogs[0].location == ""
 
+    def test_status_set_to_available(self, tmp_path):
+        """Parsed dogs should have status='Available'."""
+        html = """<div class="grid multiple-cards no-title">
+          <div class="grid-block card three-col">
+            <a class="card-image-link" href="https://alldogsmatter.co.uk/dogs/luna/">
+              <div class="block-image"><div class="bg"></div></div>
+            </a>
+            <div class="block-content">
+              <h3><a href="https://alldogsmatter.co.uk/dogs/luna/">Luna</a></h3>
+              <p>Breed: Husky Age: 6 Months Gender: Female Location: London Can Luna live?</p>
+            </div>
+          </div>
+        </div>"""
+        c = AllDogsMatterChecker(str(tmp_path))
+        dogs = c.parse(html)
+        assert len(dogs) == 1
+        assert dogs[0].status == "Available"
+
+    def test_all_8_fields_filled(self, tmp_path):
+        """Verify all 8 Dog fields are non-empty for a well-formed card."""
+        html = """<div class="grid multiple-cards no-title">
+          <div class="grid-block card three-col">
+            <a class="card-image-link" href="https://alldogsmatter.co.uk/dogs/bella/">
+              <div class="block-image">
+                <div class="bg lazyload" data-back="https://alldogsmatter.co.uk/wp-content/uploads/bella.jpg"></div>
+              </div>
+            </a>
+            <div class="block-content">
+              <h3><a href="https://alldogsmatter.co.uk/dogs/bella/">Bella</a></h3>
+              <p>Breed: Spaniel Age: 1 year old Gender: Female Location: Essex Can Bella live?</p>
+            </div>
+          </div>
+        </div>"""
+        c = AllDogsMatterChecker(str(tmp_path))
+        dogs = c.parse(html)
+        assert len(dogs) == 1
+        d = dogs[0]
+        # All 8 fields
+        assert d.name
+        assert d.age
+        assert d.gender
+        assert d.breed
+        assert d.url
+        assert d.status == "Available"
+        assert d.location
+        assert d.photo_url
+
+    def test_skips_reserved_dog(self, tmp_path):
+        """Cards with 'reserved' text should be skipped."""
+        html = """<div class="grid multiple-cards no-title">
+          <div class="grid-block card three-col">
+            <a class="card-image-link" href="https://alldogsmatter.co.uk/dogs/reserved-dog/">
+              <div class="block-image"><div class="bg"></div></div>
+            </a>
+            <div class="block-content">
+              <h3><a href="https://alldogsmatter.co.uk/dogs/reserved-dog/">Reserved Dog</a></h3>
+              <p>I am reserved!</p>
+            </div>
+          </div>
+          <div class="grid-block card three-col">
+            <a class="card-image-link" href="https://alldogsmatter.co.uk/dogs/available-dog/">
+              <div class="block-image"><div class="bg"></div></div>
+            </a>
+            <div class="block-content">
+              <h3><a href="https://alldogsmatter.co.uk/dogs/available-dog/">Available Dog</a></h3>
+              <p>Breed: Lab Age: 1 year Gender: Female Location: London Can live?</p>
+            </div>
+          </div>
+        </div>"""
+        c = AllDogsMatterChecker(str(tmp_path))
+        dogs = c.parse(html)
+        assert len(dogs) == 1
+        assert dogs[0].name == "Available Dog"
+
+    def test_skips_reserved_case_insensitive(self, tmp_path):
+        """Reserved filtering is case-insensitive."""
+        html = """<div class="grid multiple-cards no-title">
+          <div class="grid-block card three-col">
+            <a class="card-image-link" href="https://alldogsmatter.co.uk/dogs/dog1/">
+              <div class="block-image"><div class="bg"></div></div>
+            </a>
+            <div class="block-content">
+              <h3><a href="https://alldogsmatter.co.uk/dogs/dog1/">Dog1</a></h3>
+              <p>I Am Reserved!</p>
+            </div>
+          </div>
+        </div>"""
+        c = AllDogsMatterChecker(str(tmp_path))
+        dogs = c.parse(html)
+        assert dogs == []
+
 
 class TestGetMaxPages:
     def test_no_pagination_returns_1(self, tmp_path):
