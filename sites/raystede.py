@@ -15,6 +15,7 @@ from .base import Dog, SiteChecker
 LISTING_URL = "https://www.raystede.org/adopt/dogs/"
 API_URL = "https://www.raystede.org/anilog.php?type=list"
 IMAGE_BASE = "https://www.raystede.org/anilog-images"
+CENTRE_LOCATION = "Ringmer, East Sussex"
 
 
 class RaystedeChecker(SiteChecker):
@@ -83,6 +84,7 @@ class RaystedeChecker(SiteChecker):
                     url=url,
                     status=status,
                     photo_url=photo_url,
+                    location=CENTRE_LOCATION,
                 )
             )
 
