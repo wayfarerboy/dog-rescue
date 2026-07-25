@@ -53,7 +53,7 @@ class TestParseListing:
           </div>
         </article>"""
 
-    def _detail_html(self, breed, age="", gender=""):
+    def _detail_html(self, breed="", age="", gender="", status="", location=""):
         rows = ""
         if breed:
             rows += f'<tr class="about-me-row"><th>Breed:</th><td>{breed}</td></tr>'
@@ -61,6 +61,10 @@ class TestParseListing:
             rows += f'<tr class="about-me-row"><th>Age:</th><td>{age}</td></tr>'
         if gender:
             rows += f'<tr class="about-me-row"><th>Gender:</th><td>{gender}</td></tr>'
+        if status:
+            rows += f'<tr class="about-me-row"><th>Status:</th><td>{status}</td></tr>'
+        if location:
+            rows += f'<tr class="about-me-row"><th>Location:</th><td>{location}</td></tr>'
         return f"""
         <div class="rspca-pet-post dog">
           <div class="container single-pet">
@@ -81,7 +85,9 @@ class TestParseListing:
             "https://www.rspcaleedsandwakefield.org.uk/dogs/luna/",
         )
         c = RSPCALeedsChecker(str(tmp_path))
-        c._fetch_detail = lambda url: self._detail_html("Spaniel", "6 months", "Female")
+        c._fetch_detail = lambda url: self._detail_html(
+            "Spaniel", "6 months", "Female", "Available", "Leeds"
+        )
         dogs = c.parse(html)
         assert len(dogs) == 1
         d = dogs[0]
@@ -89,6 +95,8 @@ class TestParseListing:
         assert d.age == "6 months"
         assert d.gender == "Female"
         assert d.breed == "Spaniel"
+        assert d.status == "Available"
+        assert d.location == "Leeds"
         assert d.url == "https://www.rspcaleedsandwakefield.org.uk/dogs/luna/"
         assert d.photo_url == "https://example.org/photos/luna.jpg"
 
@@ -219,3 +227,80 @@ class TestParseListing:
         dogs = c.parse(html)
         assert len(dogs) == 1
         assert dogs[0].gender == "Female"
+
+    def test_status_extracted_from_detail(self, tmp_path):
+        html = self._make_card(
+            "Rosie", "4 months", "female",
+            "https://www.rspcaleedsandwakefield.org.uk/dogs/rosie/",
+        )
+        c = RSPCALeedsChecker(str(tmp_path))
+        c._fetch_detail = lambda url: self._detail_html(
+            "Terrier", "4 months", "Female", status="Reserved"
+        )
+        dogs = c.parse(html)
+        assert len(dogs) == 1
+        assert dogs[0].status == "Reserved"
+
+    def test_location_extracted_from_detail(self, tmp_path):
+        html = self._make_card(
+            "Poppy", "5 months", "female",
+            "https://www.rspcaleedsandwakefield.org.uk/dogs/poppy/",
+        )
+        c = RSPCALeedsChecker(str(tmp_path))
+        c._fetch_detail = lambda url: self._detail_html(
+            "Spaniel", "5 months", "Female", location="Wakefield"
+        )
+        dogs = c.parse(html)
+        assert len(dogs) == 1
+        assert dogs[0].location == "Wakefield"
+
+    def test_all_eight_fields_populated(self, tmp_path):
+        html = self._make_card(
+            "Daisy", "3 months", "female",
+            "https://www.rspcaleedsandwakefield.org.uk/dogs/daisy/",
+        )
+        c = RSPCALeedsChecker(str(tmp_path))
+        c._fetch_detail = lambda url: self._detail_html(
+            breed="Labrador",
+            age="3 months",
+            gender="Female",
+            status="Available",
+            location="Leeds",
+        )
+        dogs = c.parse(html)
+        assert len(dogs) == 1
+        d = dogs[0]
+        assert d.name == "Daisy"
+        assert d.age == "3 months"
+        assert d.gender == "Female"
+        assert d.breed == "Labrador"
+        assert d.status == "Available"
+        assert d.location == "Leeds"
+        assert d.url == "https://www.rspcaleedsandwakefield.org.uk/dogs/daisy/"
+        assert d.photo_url == "https://example.org/photos/daisy.jpg"
+        # Verify as_line produces all 8 fields
+        line = d.as_line()
+        parts = line.split(" | ")
+        assert len(parts) == 8
+
+    def test_status_missing_on_detail_defaults_empty(self, tmp_path):
+        html = self._make_card(
+            "Molly", "2 months", "female",
+            "https://www.rspcaleedsandwakefield.org.uk/dogs/molly/",
+        )
+        c = RSPCALeedsChecker(str(tmp_path))
+        c._fetch_detail = lambda url: self._detail_html("Mixed", "2 months")
+        dogs = c.parse(html)
+        assert len(dogs) == 1
+        assert dogs[0].status == ""
+
+    def test_location_missing_on_detail_defaults_empty(self, tmp_path):
+        html = self._make_card(
+            "Sadie", "6 months", "female",
+            "https://www.rspcaleedsandwakefield.org.uk/dogs/sadie/",
+        )
+        c = RSPCALeedsChecker(str(tmp_path))
+        c._fetch_detail = lambda url: self._detail_html("Pug")
+        dogs = c.parse(html)
+        assert len(dogs) == 1
+        assert dogs[0].location == ""

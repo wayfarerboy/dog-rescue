@@ -54,15 +54,19 @@ class RSPCALeedsChecker(SiteChecker):
                 # since we only care about puppies
                 continue
 
-            # Fetch detail page for breed and more precise age
+            # Fetch detail page for breed, age, status, and location
             breed = ""
             detail_age = ""
+            status = ""
+            location = ""
             try:
                 detail_html = self._fetch_detail(link)
                 detail_soup = BeautifulSoup(detail_html, "html.parser")
                 breed = self._detail_field(detail_soup, "Breed:")
                 detail_age = self._detail_field(detail_soup, "Age:")
                 detail_gender = self._detail_field(detail_soup, "Gender:")
+                status = self._detail_field(detail_soup, "Status:")
+                location = self._detail_field(detail_soup, "Location:")
                 if detail_gender:
                     gender_display = detail_gender
             except Exception:
@@ -87,6 +91,8 @@ class RSPCALeedsChecker(SiteChecker):
                     breed=breed,
                     url=link,
                     photo_url=photo_url,
+                    status=status,
+                    location=location,
                 )
             )
 
