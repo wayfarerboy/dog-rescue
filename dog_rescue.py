@@ -68,12 +68,14 @@ def main() -> None:
     from sites.jerry_green import JerryGreenChecker
     from sites.many_tears import ManyTearsChecker
     from sites.scsr import SCSRChecker
+    from sites.south_east_dog_rescue import SouthEastDogRescueChecker
 
     checkers = [
         ManyTearsChecker(str(DATA_DIR)),
         SCSRChecker(str(DATA_DIR)),
         DogsTrustChecker(str(DATA_DIR)),
         JerryGreenChecker(str(DATA_DIR)),
+        SouthEastDogRescueChecker(str(DATA_DIR)),
     ]
 
     text_sections: list[str] = []
