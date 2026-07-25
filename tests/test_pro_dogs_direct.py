@@ -240,7 +240,7 @@ class TestParse:
             == "https://prodogsdirect.org.uk/wp-content/uploads/2026/07/Luna7-520x650.jpg"
         )
 
-    def test_applications_closed_dog(self, tmp_path):
+    def test_applications_closed_dog_filtered(self, tmp_path):
         html = """
         <article class="post category-applications-closed">
           <h2 class="entry-title">
@@ -258,12 +258,68 @@ class TestParse:
         """
         c = ProDogsDirectChecker(str(tmp_path))
         dogs = c.parse(html)
+        assert len(dogs) == 0
+
+    def test_reserved_dog_filtered(self, tmp_path):
+        html = """
+        <article class="post category-dogs">
+          <h2 class="entry-title">
+            <a href="https://prodogsdirect.org.uk/max-lab/">
+              Max \u2013 RESERVED
+            </a>
+          </h2>
+          <div class="entry-summary">
+            <p><b>Max</b></p>
+            <p><strong>3 Year Old Male </strong></p>
+            <p><strong>Labrador</strong></p>
+            <p><strong>Fostered in London</strong></p>
+          </div>
+        </article>
+        """
+        c = ProDogsDirectChecker(str(tmp_path))
+        dogs = c.parse(html)
+        assert len(dogs) == 0
+
+    def test_only_available_dogs_returned(self, tmp_path):
+        html = """
+        <article class="post category-dogs">
+          <h2 class="entry-title">
+            <a href="https://prodogsdirect.org.uk/luna/">Luna \u2013 CKC Spaniel</a>
+          </h2>
+          <div class="entry-summary">
+            <p><b>Luna</b></p>
+            <p><strong>6 Year Old Female </strong></p>
+            <p><strong>CKC Spaniel</strong></p>
+            <p><strong>Fostered in Beckenham Kent</strong></p>
+          </div>
+        </article>
+        <article class="post category-applications-closed">
+          <h2 class="entry-title">
+            <a href="https://prodogsdirect.org.uk/fern/">Fern \u2013 APPLICATIONS CLOSED</a>
+          </h2>
+          <div class="entry-summary">
+            <p><b>Fern</b></p>
+            <p><strong>2.5 Year Old Female </strong></p>
+            <p><strong>CKC Spaniel</strong></p>
+            <p><strong>Fostered in Camberley Surrey</strong></p>
+          </div>
+        </article>
+        <article class="post category-dogs">
+          <h2 class="entry-title">
+            <a href="https://prodogsdirect.org.uk/max/">Max \u2013 RESERVED</a>
+          </h2>
+          <div class="entry-summary">
+            <p><b>Max</b></p>
+            <p><strong>3 Year Old Male </strong></p>
+            <p><strong>Labrador</strong></p>
+            <p><strong>Fostered in London</strong></p>
+          </div>
+        </article>
+        """
+        c = ProDogsDirectChecker(str(tmp_path))
+        dogs = c.parse(html)
         assert len(dogs) == 1
-        d = dogs[0]
-        assert d.name == "Fern"
-        assert d.age == "2.5 Year Old"
-        assert d.gender == "Female"
-        assert d.status == "Applications Closed"
+        assert dogs[0].name == "Luna"
 
     def test_puppy_male(self, tmp_path):
         html = """

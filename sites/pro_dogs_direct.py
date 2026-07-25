@@ -39,6 +39,10 @@ class ProDogsDirectChecker(SiteChecker):
             if not name or not url:
                 continue
 
+            # Filter out dogs that are not available for adoption
+            if status in ("Applications Closed", "Reserved"):
+                continue
+
             dogs.append(
                 Dog(
                     name=name,
