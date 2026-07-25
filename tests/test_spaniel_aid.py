@@ -223,8 +223,8 @@ class TestParse:
         c = SpanielAidChecker(str(tmp_path))
         assert c.parse(html) == []
 
-    def test_reserved_status(self, tmp_path):
-        """Female puppy with reserved status should be included."""
+    def test_reserved_status_filtered_out(self, tmp_path):
+        """Female puppy with reserved status should be filtered out."""
         html = """
         <div class="brxe-posts dog-card-style">
           <ul class="bricks-layout-wrapper">
@@ -251,9 +251,37 @@ class TestParse:
         """
         c = SpanielAidChecker(str(tmp_path))
         dogs = c.parse(html)
-        assert len(dogs) == 1
-        assert dogs[0].name == "Daisy"
-        assert dogs[0].status == "Reserved while we review"
+        assert dogs == []
+
+    def test_foster_view_to_adopt_filtered_out(self, tmp_path):
+        """Female puppy with Foster View To Adopt status should be filtered out."""
+        html = """
+        <div class="brxe-posts dog-card-style">
+          <ul class="bricks-layout-wrapper">
+            <li class="bricks-layout-item repeater-item">
+              <a href="https://spanielaid.co.uk/spaniel/chisel-sa5431/">
+                <div class="bricks-layout-inner">
+                  <figure class="image-wrapper">
+                    <img src="https://spanielaid.co.uk/wp-content/photo.jpg" />
+                  </figure>
+                  <div class="content-wrapper">
+                    <h4 class="dynamic">Chisel SA5431 \u2013 Foster View To Adopt</h4>
+                    <div class="dynamic">Working cocker spaniel</div>
+                    <div class="dynamic">8 months</div>
+                    <div class="dynamic">Bristol</div>
+                    <div class="dynamic">Female</div>
+                    <div class="dynamic">Yes 12+</div>
+                    <div class="dynamic">No</div>
+                  </div>
+                </div>
+              </a>
+            </li>
+          </ul>
+        </div>
+        """
+        c = SpanielAidChecker(str(tmp_path))
+        dogs = c.parse(html)
+        assert dogs == []
 
     def test_card_missing_link_skipped(self, tmp_path):
         html = """
