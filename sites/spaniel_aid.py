@@ -50,6 +50,10 @@ class SpanielAidChecker(SiteChecker):
             name = self._clean_name(heading_text)
             status = self._extract_status(heading_text)
 
+            # Only include dogs with "Available" status
+            if status != "Available":
+                continue
+
             # URL from the enclosing <a> tag
             link = card.select_one("a[href]")
             if not link:
