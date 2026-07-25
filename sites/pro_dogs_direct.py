@@ -40,7 +40,7 @@ class ProDogsDirectChecker(SiteChecker):
                 continue
 
             # Filter out dogs that are not available for adoption
-            if status in ("Applications Closed", "Reserved"):
+            if status in ("Applications Closed", "Reserved", "Rehomed"):
                 continue
 
             dogs.append(
@@ -81,7 +81,8 @@ class ProDogsDirectChecker(SiteChecker):
         """Extract age and gender from the summary's age paragraph.
 
         Age paragraph contains patterns like:
-          "6 Year Old Female", "12 Week Old Male", "2.5 Year Old Female", "5 Year Old Female "
+          "6 Year Old Female", "12 Week Old Male", "2.5 Year Old Female",
+          "8 Month OldMale" (missing space), "6 & 10 Year Old Females" (pair).
         Returns (age_text, gender).
         """
         summary = article.select_one(".entry-summary")
@@ -91,8 +92,11 @@ class ProDogsDirectChecker(SiteChecker):
         for p in summary.select("p"):
             text = p.get_text(strip=True)
             # Look for age pattern: <number> <Week|Month|Year> Old <Gender>
+            # Handle missing space before gender (OldMale) and plural (Females)
             m = re.match(
-                r"(\d+(?:\.\d+)?)\s+(Week|Month|Year)\s+Old\s+(Female|Male)",
+                r"(\d+(?:\.\d+)?(?:\s*&\s*\d+)?)\s+"
+                r"(Week|Month|Year)\s+Old\s*"
+                r"(Female|Male)s?",
                 text,
                 re.IGNORECASE,
             )
@@ -107,29 +111,32 @@ class ProDogsDirectChecker(SiteChecker):
         """Extract breed from summary paragraphs.
 
         Skip the name paragraph, age paragraph, and fostered-in paragraph.
-        The remaining <p> with <strong> should be the breed.
+        The remaining paragraph is the breed (may or may not have <strong>).
         """
         summary = article.select_one(".entry-summary")
         if not summary:
             return ""
 
+        name = self._parse_name(article)
+
         for p in summary.select("p"):
+            # Get text from <strong> if present, otherwise use the full paragraph
             strong = p.select_one("strong") or p.select_one("b")
-            if not strong:
-                continue
-            text = strong.get_text(strip=True)
+            text = strong.get_text(strip=True) if strong else p.get_text(strip=True)
+
             # Skip age paragraph
-            if re.search(r"(Week|Month|Year)\s+Old", text):
+            if re.search(r"(Week|Month|Year)\s+Old", text, re.IGNORECASE):
                 continue
             # Skip location paragraph
-            if "Fostered" in text or "fostered" in text:
+            if re.search(r"Fostered\s+in", text, re.IGNORECASE):
                 continue
-            # Skip if it looks like the name (first paragraph, single word or short)
-            # The name paragraph only has the name; breed will typically be longer
-            # But for robustness, skip if this text matches the parsed name
-            name = self._parse_name(article)
+            # Skip the name paragraph (first paragraph is the dog's name)
             if text == name:
                 continue
+            # Skip "Read more" links
+            if text.lower() in ("read more", "read more →"):
+                continue
+
             return text
 
         return ""
@@ -145,7 +152,9 @@ class ProDogsDirectChecker(SiteChecker):
 
         for p in summary.select("p"):
             text = p.get_text(strip=True)
-            m = re.search(r"Fostered\s+in\s+(.+)", text, re.IGNORECASE)
+            # Normalise non-breaking spaces
+            text = text.replace("\xa0", " ")
+            m = re.search(r"Fostered\s+in\s*(.+)", text, re.IGNORECASE)
             if m:
                 return m.group(1).strip()
 
@@ -162,8 +171,10 @@ class ProDogsDirectChecker(SiteChecker):
             return "Applications Closed"
         if "RESERVED" in title.upper():
             return "Reserved"
+        if "REHOMED" in title.upper():
+            return "Rehomed"
 
-        return ""
+        return "Available"
 
     def _profile_url(self, article) -> str:
         """Extract the profile URL from the entry-title link."""

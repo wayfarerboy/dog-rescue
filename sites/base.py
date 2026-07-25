@@ -49,6 +49,9 @@ class SiteChecker(ABC):
 
     site_name: str = ""          # Display name for this site
     data_file: str = ""          # Path to data file for change detection
+    # Set True for rescues that transport dogs (e.g. from abroad)
+    # so distance to their origin location is irrelevant.
+    bypass_distance_filter: bool = False
 
     def __init__(self, data_dir: str) -> None:
         self.data_dir = Path(data_dir)

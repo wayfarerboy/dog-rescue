@@ -133,7 +133,7 @@ class TestMain:
         fake_dog = type("Dog", (), {
             "name": "Bella",
             "age": "6",
-            "gender": "F",
+            "gender": "Female",
             "breed": "X",
             "url": "https://a",
             "status": "",
@@ -179,7 +179,7 @@ class TestMain:
         fake_dog = type("Dog", (), {
             "name": "Bella",
             "age": "6",
-            "gender": "F",
+            "gender": "Female",
             "breed": "X",
             "url": "https://a",
             "status": "",
@@ -228,7 +228,7 @@ class TestMain:
         fake_dog = type("Dog", (), {
             "name": "Bella",
             "age": "6",
-            "gender": "F",
+            "gender": "Female",
             "breed": "X",
             "url": "https://a",
             "status": "",

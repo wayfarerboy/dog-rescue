@@ -15,7 +15,11 @@ class SpanielAidChecker(SiteChecker):
     URL = "https://spanielaid.co.uk/available-dogs/"
 
     def fetch(self) -> str:
-        resp = requests.get(self.URL, timeout=30)
+        resp = requests.get(
+            self.URL,
+            timeout=30,
+            headers={"User-Agent": "Mozilla/5.0 (compatible; dog-rescue/1.0)"},
+        )
         resp.raise_for_status()
         return resp.text
 

@@ -17,10 +17,10 @@ DATA_DIR = SCRIPT_DIR / "data"
 
 
 def main() -> None:
-    from sites.registry import get_checkers
+    from sites.registry import get_active_checkers
 
     DATA_DIR.mkdir(parents=True, exist_ok=True)
-    checkers = get_checkers(str(DATA_DIR))
+    checkers = get_active_checkers(str(DATA_DIR))
 
     populated: list[str] = []
     failed: list[tuple[str, str]] = []

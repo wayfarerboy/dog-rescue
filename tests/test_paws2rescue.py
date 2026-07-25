@@ -92,7 +92,7 @@ class TestParse:
         result = c._parse_single(dog_data)
         assert result is not None
         assert result.name == "Bella (Cat Friendly)"
-        assert result.gender == "Good Girl"
+        assert result.gender == "Female"
         assert result.location == "Romania"
         assert result.url == "https://paws2rescue.com/dog/bella/"
 
@@ -112,7 +112,7 @@ class TestParse:
         # _parse_single returns male dogs (filtering happens in check())
         result = c._parse_single(dog_data)
         assert result is not None
-        assert result.gender == "Good Boy"
+        assert result.gender == "Male"
 
     def test_filters_to_age_12_months_or_under(self, tmp_path):
         c = Paws2RescueChecker(str(tmp_path))
@@ -155,9 +155,10 @@ class TestParse:
     def test_parse_detail_page(self, tmp_path):
         c = Paws2RescueChecker(str(tmp_path))
         html = "<html><body><p>Name: Olive</p><p>Age: approx. 7 Months old</p></body></html>"
-        age, breed = c._parse_detail(html)
+        age, breed, photo_url = c._parse_detail(html)
         assert age == "approx. 7 Months old"
         assert breed == ""
+        assert photo_url == ""
 
     def test_parse_detail_page_with_breed(self, tmp_path):
         c = Paws2RescueChecker(str(tmp_path))
@@ -168,9 +169,10 @@ class TestParse:
             "<p>Breed: Shepherd Mix</p>"
             "</body></html>"
         )
-        age, breed = c._parse_detail(html)
+        age, breed, photo_url = c._parse_detail(html)
         assert age == "approx. 6 Months old"
         assert breed == "Shepherd Mix"
+        assert photo_url == ""
 
 
 class TestStatusFiltering:

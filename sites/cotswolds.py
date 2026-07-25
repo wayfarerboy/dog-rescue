@@ -131,10 +131,19 @@ class CotswoldsChecker(SiteChecker):
 
         for attr in soup.select(".vehica-car-attributes__name"):
             text = attr.get_text(strip=True)
-            if text.startswith("Age::"):
-                age = text.removeprefix("Age::").strip()
-            elif text.startswith("Breed::"):
-                breed = text.removeprefix("Breed::").strip()
+            # Value is in the sibling .vehica-car-attributes__values element
+            if text in ("Age:", "Age::"):
+                values_el = attr.find_next_sibling(
+                    class_="vehica-car-attributes__values"
+                )
+                if values_el:
+                    age = values_el.get_text(strip=True)
+            elif text in ("Breed:", "Breed::"):
+                values_el = attr.find_next_sibling(
+                    class_="vehica-car-attributes__values"
+                )
+                if values_el:
+                    breed = values_el.get_text(strip=True)
 
         # Location: .vehica-address span
         addr_span = soup.select_one(".vehica-address span")

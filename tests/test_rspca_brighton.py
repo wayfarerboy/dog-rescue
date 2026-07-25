@@ -275,7 +275,7 @@ class TestParseListing:
         assert dogs[0].location == "Patcham Animal Centre"
 
     def test_location_missing_on_detail(self, tmp_path):
-        """Location defaults to empty string when not on detail page."""
+        """Location defaults to 'Brighton' when not on detail page."""
         html = self._make_card(
             "Ghost", "",
             "https://rspca-brighton.org.uk/project/ghost/",
@@ -291,4 +291,4 @@ class TestParseListing:
         c._fetch_detail = lambda url: detail
         dogs = c.parse(html)
         assert len(dogs) == 1
-        assert dogs[0].location == ""
+        assert dogs[0].location == "Brighton"

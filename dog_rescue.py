@@ -14,7 +14,15 @@ from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 from pathlib import Path
 
-from distance_lookup import MAX_DISTANCE_MILES_DEFAULT, DistanceLookup, filter_dogs_by_distance
+from breed_exclusion import BreedExclusionList, filter_dogs_by_breed
+from filters import filter_dogs_by_age, filter_dogs_by_gender
+from distance_lookup import (
+    MAX_DISTANCE_MILES_DEFAULT,
+    DistanceLookup,
+    evaluate_rescue_centers,
+    filter_dogs_by_distance,
+)
+from too_far import TooFarList
 
 SCRIPT_DIR = Path(__file__).resolve().parent
 DATA_DIR = SCRIPT_DIR / "data"
@@ -75,12 +83,28 @@ def main() -> None:
         except ValueError:
             max_distance = MAX_DISTANCE_MILES_DEFAULT
     distance_lookup = DistanceLookup(str(DATA_DIR), api_key=api_key)
+    breed_exclusion = BreedExclusionList(str(DATA_DIR))
 
     # Import site checkers from shared registry
     from sites.base import Dog
-    from sites.registry import get_checkers
+    from sites.registry import get_active_checkers
 
-    checkers = get_checkers(str(DATA_DIR))
+    too_far = TooFarList(str(DATA_DIR))
+
+    # Evaluate single-location rescues that are too far
+    if max_distance is not None:
+        newly_excluded = evaluate_rescue_centers(
+            str(DATA_DIR), distance_lookup, max_distance, too_far
+        )
+        for site_name, location, distance in newly_excluded:
+            print(
+                f"Added '{site_name}' to too-far list "
+                f"(single location '{location}' at {distance:.1f} mi > {max_distance} mi)",
+                file=sys.stderr,
+            )
+
+    # Only check active (non-too-far) rescues
+    checkers = get_active_checkers(str(DATA_DIR))
 
     text_sections: list[str] = []
     html_sites: list[tuple[str, list[Dog]]] = []
@@ -92,11 +116,36 @@ def main() -> None:
             print(f"  Found {len(new_dogs)} new dog(s)", file=sys.stderr)
 
             if new_dogs and max_distance is not None:
+                if not getattr(checker, "bypass_distance_filter", False):
+                    before = len(new_dogs)
+                    new_dogs = filter_dogs_by_distance(new_dogs, distance_lookup, max_distance)
+                    removed = before - len(new_dogs)
+                    if removed:
+                        print(f"  Filtered out {removed} dog(s) beyond {max_distance} miles",
+                              file=sys.stderr)
+
+            if new_dogs:
                 before = len(new_dogs)
-                new_dogs = filter_dogs_by_distance(new_dogs, distance_lookup, max_distance)
+                new_dogs = filter_dogs_by_gender(new_dogs, keep="Female")
                 removed = before - len(new_dogs)
                 if removed:
-                    print(f"  Filtered out {removed} dog(s) beyond {max_distance} miles",
+                    print(f"  Filtered out {removed} dog(s) by gender",
+                          file=sys.stderr)
+
+            if new_dogs:
+                before = len(new_dogs)
+                new_dogs = filter_dogs_by_age(new_dogs, max_months=12)
+                removed = before - len(new_dogs)
+                if removed:
+                    print(f"  Filtered out {removed} dog(s) by age",
+                          file=sys.stderr)
+
+            if new_dogs:
+                before = len(new_dogs)
+                new_dogs = filter_dogs_by_breed(new_dogs, breed_exclusion)
+                removed = before - len(new_dogs)
+                if removed:
+                    print(f"  Filtered out {removed} dog(s) by breed exclusion",
                           file=sys.stderr)
 
             if new_dogs:

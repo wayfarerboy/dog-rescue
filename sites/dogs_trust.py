@@ -1,4 +1,11 @@
-"""Dogs Trust site checker — uses the GraphQL API."""
+"""Dogs Trust site checker — uses the GraphQL API.
+
+Supports optional distance filtering.  Set MAX_DISTANCE_MILES in .env
+to filter results to centres within that straight-line distance of
+Worcester.
+"""
+
+from __future__ import annotations
 
 from datetime import date
 
@@ -28,7 +35,8 @@ class DogsTrustChecker(SiteChecker):
         liveWithDogs: false,
         liveWithPreschool: false,
         liveWithPrimary: false,
-        liveWithSecondary: false
+        liveWithSecondary: false,
+        searchFrom: { latitude: 52.1917, longitude: -2.2206 }
       }) {
         totalResults
         results {
@@ -41,6 +49,10 @@ class DogsTrustChecker(SiteChecker):
           size
           centreName
           status
+          location {
+            latitude
+            longitude
+          }
           media {
             images {
               src
@@ -50,6 +62,10 @@ class DogsTrustChecker(SiteChecker):
       }
     }
     """
+
+    def __init__(self, data_dir: str, max_distance_miles: float | None = None) -> None:
+        super().__init__(data_dir)
+        self._max_distance_miles = max_distance_miles
 
     def fetch(self) -> str:
         """Fetch all pages, return combined JSON array string."""
@@ -104,6 +120,16 @@ class DogsTrustChecker(SiteChecker):
             age_str = self._compute_age(dob_str)
             photo_url = self._first_image(d)
 
+            # Distance filter via centre coordinates
+            if self._max_distance_miles is not None:
+                location = d.get("location") or {}
+                lat = location.get("latitude")
+                lng = location.get("longitude")
+                if lat is not None and lng is not None:
+                    miles = self._haversine_miles(52.1917, -2.2206, lat, lng)
+                    if miles > self._max_distance_miles:
+                        continue
+
             dogs.append(
                 Dog(
                     name=name,
@@ -150,6 +176,22 @@ class DogsTrustChecker(SiteChecker):
             result["photo_url"] = match.group(1)
 
         return result
+
+    @staticmethod
+    def _haversine_miles(lat1: float, lng1: float, lat2: float, lng2: float) -> float:
+        """Compute straight-line distance in miles between two lat/lng points."""
+        import math
+
+        R = 3958.8
+        dlat = math.radians(lat2 - lat1)
+        dlng = math.radians(lng2 - lng1)
+        a = (
+            math.sin(dlat / 2) ** 2
+            + math.cos(math.radians(lat1))
+            * math.cos(math.radians(lat2))
+            * math.sin(dlng / 2) ** 2
+        )
+        return R * 2 * math.atan2(math.sqrt(a), math.sqrt(1 - a))
 
     @staticmethod
     def _compute_age(dob_str: str) -> str:

@@ -95,7 +95,7 @@ class RSPCABrightonChecker(SiteChecker):
                     age=age,
                     gender=gender,
                     breed=breed,
-                    location=location,
+                    location=location if location else "Brighton",
                     url=link,
                     status=status if status else "Available",
                     photo_url=photo_url,

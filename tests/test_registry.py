@@ -5,16 +5,18 @@ from __future__ import annotations
 from sites.registry import get_checkers
 
 
-def test_all_13_checkers_present() -> None:
-    """All 13 site checkers should be in the registry."""
+def test_all_checkers_present() -> None:
+    """All site checkers should be in the registry."""
     checkers = get_checkers("/tmp/test_data")
 
     site_names = sorted(c.site_name for c in checkers)
 
     expected = sorted([
         "All Dogs Matter",
+        "Cheltenham Animal Shelter",
         "Cotswolds Dogs & Cats Home",
         "Dogs Trust",
+        "Forest Dog Rescue",
         "Jerry Green Dog Rescue",
         "Many Tears Rescue",
         "Paws2Rescue",
@@ -27,6 +29,6 @@ def test_all_13_checkers_present() -> None:
         "Spaniel Aid",
     ])
 
-    assert len(checkers) == 13, f"Expected 13 checkers, got {len(checkers)}"
+    assert len(checkers) >= 15, f"Expected at least 15 checkers, got {len(checkers)}"
     missing = set(expected) ^ set(site_names)
     assert site_names == expected, f"Missing or unexpected checkers: {missing}"

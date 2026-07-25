@@ -39,15 +39,17 @@ class TestParseAgeMonths:
 
 class TestParseDetailPage:
     def test_extracts_age_and_breed(self):
-        """Detail page with 'Age:: X years old' and 'Breed:: Y' format."""
+        """Detail page with Age:/Breed: labels and sibling values."""
         html = """
         <div class="vehica-car-attributes">
           <div class="vehica-car-attributes-grid vehica-grid">
             <div class="vehica-grid__element vehica-grid__element--1of1">
-              <div class="vehica-car-attributes__name">Age:: 1.5 years old</div>
+              <div class="vehica-car-attributes__name">Age:</div>
+              <div class="vehica-car-attributes__values">1.5 years old</div>
             </div>
             <div class="vehica-grid__element vehica-grid__element--1of1">
-              <div class="vehica-car-attributes__name">Breed:: Patterdale Terrier X</div>
+              <div class="vehica-car-attributes__name">Breed:</div>
+              <div class="vehica-car-attributes__values">Patterdale Terrier X</div>
             </div>
           </div>
         </div>
@@ -63,10 +65,12 @@ class TestParseDetailPage:
         <div class="vehica-car-attributes">
           <div class="vehica-car-attributes-grid vehica-grid">
             <div class="vehica-grid__element">
-              <div class="vehica-car-attributes__name">Age:: 6 months old</div>
+              <div class="vehica-car-attributes__name">Age:</div>
+              <div class="vehica-car-attributes__values">6 months old</div>
             </div>
             <div class="vehica-grid__element">
-              <div class="vehica-car-attributes__name">Breed:: Labrador</div>
+              <div class="vehica-car-attributes__name">Breed:</div>
+              <div class="vehica-car-attributes__values">Labrador</div>
             </div>
           </div>
         </div>
@@ -80,7 +84,8 @@ class TestParseDetailPage:
     def test_missing_age_returns_empty(self):
         html = """
         <div class="vehica-car-attributes">
-          <div class="vehica-car-attributes__name">Breed:: Spaniel</div>
+          <div class="vehica-car-attributes__name">Breed:</div>
+          <div class="vehica-car-attributes__values">Spaniel</div>
         </div>
         """
         age, breed, location, photo_url = CotswoldsChecker._parse_detail_page(html)
@@ -92,7 +97,8 @@ class TestParseDetailPage:
     def test_missing_breed_returns_empty(self):
         html = """
         <div class="vehica-car-attributes">
-          <div class="vehica-car-attributes__name">Age:: 2 years old</div>
+          <div class="vehica-car-attributes__name">Age:</div>
+          <div class="vehica-car-attributes__values">2 years old</div>
         </div>
         """
         age, breed, location, photo_url = CotswoldsChecker._parse_detail_page(html)
@@ -105,8 +111,10 @@ class TestParseDetailPage:
         """Location is extracted from .vehica-address span."""
         html = """
         <div class="vehica-car-attributes">
-          <div class="vehica-car-attributes__name">Age:: 6 months old</div>
-          <div class="vehica-car-attributes__name">Breed:: Terrier</div>
+          <div class="vehica-car-attributes__name">Age:</div>
+          <div class="vehica-car-attributes__values">6 months old</div>
+          <div class="vehica-car-attributes__name">Breed:</div>
+          <div class="vehica-car-attributes__values">Terrier</div>
         </div>
         <div class="vehica-address">
           <a href="https://maps.google.com/?q=Test+Location">
@@ -124,8 +132,10 @@ class TestParseDetailPage:
         """Photo URL is extracted from first .vehica-car-gallery img."""
         html = """
         <div class="vehica-car-attributes">
-          <div class="vehica-car-attributes__name">Age:: 1 year old</div>
-          <div class="vehica-car-attributes__name">Breed:: Lab</div>
+          <div class="vehica-car-attributes__name">Age:</div>
+          <div class="vehica-car-attributes__values">1 year old</div>
+          <div class="vehica-car-attributes__name">Breed:</div>
+          <div class="vehica-car-attributes__values">Lab</div>
         </div>
         <div class="vehica-car-gallery">
           <img src="https://example.org/dog1.jpg" />
@@ -142,8 +152,10 @@ class TestParseDetailPage:
         """All four fields populated from a full detail page."""
         html = """
         <div class="vehica-car-attributes">
-          <div class="vehica-car-attributes__name">Age:: 3 months old</div>
-          <div class="vehica-car-attributes__name">Breed:: Cocker Spaniel</div>
+          <div class="vehica-car-attributes__name">Age:</div>
+          <div class="vehica-car-attributes__values">3 months old</div>
+          <div class="vehica-car-attributes__name">Breed:</div>
+          <div class="vehica-car-attributes__values">Cocker Spaniel</div>
         </div>
         <div class="vehica-address">
           <a href="https://maps.google.com/?q=Test">
@@ -164,7 +176,8 @@ class TestParseDetailPage:
         """No .vehica-address means empty location."""
         html = """
         <div class="vehica-car-attributes">
-          <div class="vehica-car-attributes__name">Age:: 2 years old</div>
+          <div class="vehica-car-attributes__name">Age:</div>
+          <div class="vehica-car-attributes__values">2 years old</div>
         </div>
         <div class="vehica-car-gallery">
           <img src="https://example.org/dog.jpg" />
@@ -178,7 +191,8 @@ class TestParseDetailPage:
         """No .vehica-car-gallery img means empty photo_url."""
         html = """
         <div class="vehica-car-attributes">
-          <div class="vehica-car-attributes__name">Age:: 1 year old</div>
+          <div class="vehica-car-attributes__name">Age:</div>
+          <div class="vehica-car-attributes__values">1 year old</div>
         </div>
         <div class="vehica-address">
           <span>Somewhere</span>
@@ -385,8 +399,10 @@ class TestParse:
         """
         detail_html = """
         <div class="vehica-car-attributes">
-          <div class="vehica-car-attributes__name">Age:: 6 months old</div>
-          <div class="vehica-car-attributes__name">Breed:: Spaniel</div>
+          <div class="vehica-car-attributes__name">Age:</div>
+          <div class="vehica-car-attributes__values">6 months old</div>
+          <div class="vehica-car-attributes__name">Breed:</div>
+          <div class="vehica-car-attributes__values">Spaniel</div>
         </div>
         <div class="vehica-address">
           <span>Cambridge</span>
@@ -427,8 +443,10 @@ class TestParse:
         """
         detail_html = """
         <div class="vehica-car-attributes">
-          <div class="vehica-car-attributes__name">Age:: 1.5 years old</div>
-          <div class="vehica-car-attributes__name">Breed:: Terrier</div>
+          <div class="vehica-car-attributes__name">Age:</div>
+          <div class="vehica-car-attributes__values">1.5 years old</div>
+          <div class="vehica-car-attributes__name">Breed:</div>
+          <div class="vehica-car-attributes__values">Terrier</div>
         </div>
         """
         c = CotswoldsChecker(str(tmp_path))
@@ -454,8 +472,10 @@ class TestParse:
         """
         detail_html = """
         <div class="vehica-car-attributes">
-          <div class="vehica-car-attributes__name">Age:: 12 months old</div>
-          <div class="vehica-car-attributes__name">Breed:: Pug</div>
+          <div class="vehica-car-attributes__name">Age:</div>
+          <div class="vehica-car-attributes__values">12 months old</div>
+          <div class="vehica-car-attributes__name">Breed:</div>
+          <div class="vehica-car-attributes__values">Pug</div>
         </div>
         <div class="vehica-address">
           <span>Gloucester</span>
@@ -517,8 +537,10 @@ class TestParse:
         def mock_fetch(url):
             if "luna" in url:
                 return """<div class="vehica-car-attributes">
-                  <div class="vehica-car-attributes__name">Age:: 6 months old</div>
-                  <div class="vehica-car-attributes__name">Breed:: Spaniel</div>
+                  <div class="vehica-car-attributes__name">Age:</div>
+                  <div class="vehica-car-attributes__values">6 months old</div>
+                  <div class="vehica-car-attributes__name">Breed:</div>
+                  <div class="vehica-car-attributes__values">Spaniel</div>
                 </div>
                 <div class="vehica-address">
                   <span>Cambridge</span>
@@ -528,8 +550,10 @@ class TestParse:
                 </div>"""
             if "daisy" in url:
                 return """<div class="vehica-car-attributes">
-                  <div class="vehica-car-attributes__name">Age:: 3 years old</div>
-                  <div class="vehica-car-attributes__name">Breed:: Terrier</div>
+                  <div class="vehica-car-attributes__name">Age:</div>
+                  <div class="vehica-car-attributes__values">3 years old</div>
+                  <div class="vehica-car-attributes__name">Breed:</div>
+                  <div class="vehica-car-attributes__values">Terrier</div>
                 </div>
                 <div class="vehica-address">
                   <span>Gloucester</span>

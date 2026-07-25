@@ -26,6 +26,7 @@ _STATUS_SUFFIXES_TO_SKIP = frozenset({"Reserved", "Soon Available", "Available S
 class Paws2RescueChecker(SiteChecker):
     site_name = "Paws2Rescue"
     data_file = "paws2rescue.txt"
+    bypass_distance_filter = True  # Dogs transported from Romania to UK
 
     API_URL = (
         "https://paws2rescue.com/wp-json/wp/v2/dog"
@@ -66,15 +67,19 @@ class Paws2RescueChecker(SiteChecker):
         raw = self.fetch()
         dogs = self.parse(raw)
 
-        # Scrape detail pages for age and breed
+        # Scrape detail pages for age, breed, and photo_url
         for dog in dogs:
             try:
                 detail_html = self._fetch_detail(dog.url)
-                age, breed = self._parse_detail(detail_html)
-                dog.age = age
-                dog.breed = breed
+                age, breed, photo_url = self._parse_detail(detail_html)
+                if age:
+                    dog.age = age
+                if breed:
+                    dog.breed = breed
+                if photo_url and not dog.photo_url:
+                    dog.photo_url = photo_url
             except Exception:
-                # If detail page fails, leave age/breed as-is (empty)
+                # If detail page fails, leave fields as-is
                 pass
 
         # Post-scrape age filter
@@ -106,7 +111,9 @@ class Paws2RescueChecker(SiteChecker):
 
         embedded = item.get("_embedded", {})
 
-        gender = self._parse_term_names(embedded, "sex", item.get("sex", []))
+        gender = self._normalize_gender(
+            self._parse_term_names(embedded, "sex", item.get("sex", []))
+        )
         location = self._parse_location_names(embedded, item.get("location", []))
         photo_url = self._parse_featured_media(embedded)
 
@@ -132,15 +139,39 @@ class Paws2RescueChecker(SiteChecker):
         resp.raise_for_status()
         return resp.text
 
-    def _parse_detail(self, html: str) -> tuple[str, str]:
-        """Parse age and breed from a detail page.
+    def _parse_detail(self, html: str) -> tuple[str, str, str]:
+        """Parse age, breed, and photo_url from a detail page.
 
-        Returns (age_str, breed_str). Both may be empty strings.
+        Returns (age_str, breed_str, photo_url). All may be empty strings.
         """
         soup = BeautifulSoup(html, "html.parser")
         age = self._extract_detail_field(soup, "Age")
         breed = self._extract_detail_field(soup, "Breed")
-        return age, breed
+        photo_url = self._extract_og_image(soup)
+        return age, breed, photo_url
+
+    @staticmethod
+    def _extract_og_image(soup) -> str:
+        """Extract og:image from meta tags."""
+        og = soup.select_one('meta[property="og:image"]')
+        if og:
+            return og.get("content", "")
+        return ""
+
+    @staticmethod
+    def _normalize_gender(raw: str) -> str:
+        """Normalize gender strings from the WP taxonomy.
+
+        The site uses "Good Girl" for female and "Good Boy" for male.
+        """
+        if not raw:
+            return ""
+        lower = raw.lower()
+        if "girl" in lower or "female" in lower:
+            return "Female"
+        if "boy" in lower or "male" in lower:
+            return "Male"
+        return raw
 
     # ── static helpers ──────────────────────────────────────────────
 
@@ -171,7 +202,12 @@ class Paws2RescueChecker(SiteChecker):
 
     @staticmethod
     def _parse_featured_media(embedded: dict) -> str:
-        """Extract featured image URL from _embedded data."""
+        """Extract featured image URL from _embedded data.
+
+        Tries wp:featuredmedia first; if that's missing, doesn't
+        fetch via wp:attachment links (too slow).  The check() method
+        will fill photo_url from the detail page instead.
+        """
         media_list = embedded.get("wp:featuredmedia", [])
         if media_list:
             return media_list[0].get("source_url", "")

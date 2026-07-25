@@ -201,6 +201,18 @@ def repair_file(
     return count
 
 
+def _active_targets(data_dir: str) -> dict:
+    """Return _CHECKER_REGISTRY entries filtered to active (non-too-far) sites."""
+    from too_far import TooFarList
+
+    too_far = TooFarList(data_dir)
+    # site_name is a class attribute on each checker class
+    return {
+        k: v for k, v in _CHECKER_REGISTRY.items()
+        if v[0].site_name not in too_far
+    }
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description="Repair cached dog-rescue data")
     parser.add_argument(
@@ -225,7 +237,7 @@ def main() -> None:
             sys.exit(1)
         targets = {key: _CHECKER_REGISTRY[key]}
     else:
-        targets = _CHECKER_REGISTRY
+        targets = _active_targets(str(DATA_DIR))
 
     total_repaired = 0
     total_checked = 0

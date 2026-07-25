@@ -154,7 +154,7 @@ class TestHelpers:
             '<h2 class="entry-title"><a href="/dog">Luna \u2013 CKC Spaniel</a></h2>'
             "</article>"
         ).select_one("article")
-        assert c._parse_status(article) == ""
+        assert c._parse_status(article) == "Available"
 
     def test_profile_url(self):
         c = ProDogsDirectChecker("/tmp")
@@ -233,7 +233,7 @@ class TestParse:
         assert d.gender == "Female"
         assert d.breed == "CKC Spaniel"
         assert d.location == "Beckenham Kent"
-        assert d.status == ""
+        assert d.status == "Available"
         assert d.url == "https://prodogsdirect.org.uk/luna-cavalier-king-charles-spaniel/"
         assert (
             d.photo_url

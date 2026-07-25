@@ -11,8 +11,10 @@ from __future__ import annotations
 import sys
 from pathlib import Path
 
+from breed_exclusion import BreedExclusionList, filter_dogs_by_breed
+from filters import filter_dogs_by_age, filter_dogs_by_gender
 from sites.base import Dog, _esc, _photo_tag
-from sites.registry import get_checkers
+from sites.registry import get_active_checkers
 
 SCRIPT_DIR = Path(__file__).resolve().parent
 DATA_DIR = SCRIPT_DIR / "data"
@@ -136,8 +138,9 @@ def format_table(results: list[tuple[str, list[Dog]]]) -> str:
 
 def list_cached(data_dir: str) -> list[tuple[str, list[Dog]]]:
     """Read dogs from cache files. Does not modify any files."""
+    breed_exclusion = BreedExclusionList(data_dir)
     results: list[tuple[str, list[Dog]]] = []
-    for checker in get_checkers(data_dir):
+    for checker in get_active_checkers(data_dir):
         data_path = Path(data_dir) / checker.data_file
         if not data_path.exists():
             continue
@@ -147,17 +150,26 @@ def list_cached(data_dir: str) -> list[tuple[str, list[Dog]]]:
             if line.strip()
         ]
         if dogs:
+            dogs = filter_dogs_by_breed(dogs, breed_exclusion)
+            dogs = filter_dogs_by_gender(dogs, keep="Female")
+            dogs = filter_dogs_by_age(dogs, max_months=11)
+        if dogs:
             results.append((checker.site_name, dogs))
     return results
 
 
 def list_live(data_dir: str) -> list[tuple[str, list[Dog]]]:
     """Fetch and parse all sites live. Does not modify cache files."""
+    breed_exclusion = BreedExclusionList(data_dir)
     results: list[tuple[str, list[Dog]]] = []
-    for checker in get_checkers(data_dir):
+    for checker in get_active_checkers(data_dir):
         try:
             raw = checker.fetch()
             dogs = checker.parse(raw)
+            if dogs:
+                dogs = filter_dogs_by_breed(dogs, breed_exclusion)
+                dogs = filter_dogs_by_gender(dogs, keep="Female")
+                dogs = filter_dogs_by_age(dogs, max_months=11)
             if dogs:
                 results.append((checker.site_name, dogs))
         except Exception as exc:

@@ -99,7 +99,7 @@ class TestListCached:
             "Available | Bella | 6 Months | Female | Spaniel | Cardiff |  | https://ex.org/b\n"
         )
 
-        with patch("list_dogs.get_checkers") as mock_registry:
+        with patch("list_dogs.get_active_checkers") as mock_registry:
             mock_checker = type(
                 "Fake", (), {"data_file": "cotswolds.txt", "site_name": "Cotswolds"}
             )()
@@ -116,7 +116,7 @@ class TestListCached:
         data_dir = tmp_path / "data"
         data_dir.mkdir()
 
-        with patch("list_dogs.get_checkers") as mock_registry:
+        with patch("list_dogs.get_active_checkers") as mock_registry:
             mock_checker = type(
                 "Fake", (), {"data_file": "nonexistent.txt", "site_name": "Ghost"}
             )()
@@ -133,7 +133,7 @@ class TestListCached:
         cache_file.write_text(original)
         mtime_before = cache_file.stat().st_mtime
 
-        with patch("list_dogs.get_checkers") as mock_registry:
+        with patch("list_dogs.get_active_checkers") as mock_registry:
             mock_checker = type("Fake", (), {"data_file": "test.txt", "site_name": "Test"})()
             mock_registry.return_value = [mock_checker]
 
@@ -223,7 +223,7 @@ class TestListLive:
             "parse": lambda self, raw: [fake_dog],
         })()
 
-        with patch("list_dogs.get_checkers", return_value=[mock_checker]):
+        with patch("list_dogs.get_active_checkers", return_value=[mock_checker]):
             results = list_dogs.list_live(str(data_dir))
             assert len(results) == 1
             site_name, dogs = results[0]
@@ -240,7 +240,7 @@ class TestListLive:
             "fetch": lambda self: (_ for _ in ()).throw(RuntimeError("boom")),
         })()
 
-        with patch("list_dogs.get_checkers", return_value=[bad_checker]):
+        with patch("list_dogs.get_active_checkers", return_value=[bad_checker]):
             results = list_dogs.list_live(str(data_dir))
             assert results == []
 
@@ -259,7 +259,7 @@ class TestListLive:
             "parse": lambda self, raw: [fake_dog],
         })()
 
-        with patch("list_dogs.get_checkers", return_value=[mock_checker]):
+        with patch("list_dogs.get_active_checkers", return_value=[mock_checker]):
             list_dogs.list_live(str(data_dir))
 
         # Cache file should not be touched (no _save_current, no overwrite)
