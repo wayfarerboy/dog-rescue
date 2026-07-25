@@ -19,6 +19,9 @@ _SIZE_SMALL = 18
 _SIZE_SMALL_TO_MEDIUM = 30
 _SIZE_MEDIUM = 19
 
+# Title suffixes that indicate a dog is not available
+_STATUS_SUFFIXES_TO_SKIP = frozenset({"Reserved", "Soon Available", "Available Soon"})
+
 
 class Paws2RescueChecker(SiteChecker):
     site_name = "Paws2Rescue"
@@ -85,11 +88,21 @@ class Paws2RescueChecker(SiteChecker):
     # ── internal helpers ────────────────────────────────────────────
 
     def _parse_single(self, item: dict) -> Dog | None:
-        """Parse a single dog from the WP REST API response item."""
+        """Parse a single dog from the WP REST API response item.
+
+        Returns None for reserved/not-available dogs.
+        """
         title = item.get("title", {}).get("rendered", "")
         link = item.get("link", "")
         if not title or not link:
             return None
+
+        # Filter out reserved / not-available dogs.
+        # Status suffixes are appended to the title with 2+ spaces.
+        if "  " in title:
+            suffix = " ".join(title.rsplit("  ", 1)[1].split())
+            if suffix in _STATUS_SUFFIXES_TO_SKIP:
+                return None
 
         embedded = item.get("_embedded", {})
 

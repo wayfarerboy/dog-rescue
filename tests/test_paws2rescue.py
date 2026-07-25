@@ -173,6 +173,58 @@ class TestParse:
         assert breed == "Shepherd Mix"
 
 
+class TestStatusFiltering:
+    """Reserved / not-available dogs should be filtered out."""
+
+    def test_skips_reserved_dog(self, tmp_path):
+        c = Paws2RescueChecker(str(tmp_path))
+        dog_data = {
+            "title": {"rendered": "Toto (Cat Friendly)   Reserved"},
+            "link": "https://paws2rescue.com/dog/toto/",
+        }
+        result = c._parse_single(dog_data)
+        assert result is None
+
+    def test_skips_soon_available_dog(self, tmp_path):
+        c = Paws2RescueChecker(str(tmp_path))
+        dog_data = {
+            "title": {"rendered": "Dougal (Cat Friendly)   Soon Available"},
+            "link": "https://paws2rescue.com/dog/dougal/",
+        }
+        result = c._parse_single(dog_data)
+        assert result is None
+
+    def test_skips_available_soon_dog(self, tmp_path):
+        c = Paws2RescueChecker(str(tmp_path))
+        dog_data = {
+            "title": {"rendered": "Olive (Cat Friendly)   Available Soon"},
+            "link": "https://paws2rescue.com/dog/olive/",
+        }
+        result = c._parse_single(dog_data)
+        assert result is None
+
+    def test_keeps_available_dog_with_senior_suffix(self, tmp_path):
+        """(Senior) suffix is an age indicator, not a status — keep it."""
+        c = Paws2RescueChecker(str(tmp_path))
+        dog_data = {
+            "title": {"rendered": "Luna   (Senior)"},
+            "link": "https://paws2rescue.com/dog/luna/",
+        }
+        result = c._parse_single(dog_data)
+        assert result is not None
+        assert result.name == "Luna   (Senior)"
+
+    def test_keeps_available_dog_no_suffix(self, tmp_path):
+        c = Paws2RescueChecker(str(tmp_path))
+        dog_data = {
+            "title": {"rendered": "Bella (Cat Friendly)"},
+            "link": "https://paws2rescue.com/dog/bella/",
+        }
+        result = c._parse_single(dog_data)
+        assert result is not None
+        assert result.name == "Bella (Cat Friendly)"
+
+
 class TestPhotoUrl:
     def test_extracts_from_listing_card_api_data(self, tmp_path):
         c = Paws2RescueChecker(str(tmp_path))
