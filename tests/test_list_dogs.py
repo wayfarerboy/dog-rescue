@@ -143,6 +143,72 @@ class TestListCached:
         assert cache_file.stat().st_mtime == mtime_before
 
 
+class TestFormatHtml:
+    def test_writes_self_contained_html_document(self):
+        dogs = [make_dog()]
+        html = list_dogs.format_html([("Test Rescue", dogs)])
+        assert "<!DOCTYPE html>" in html
+        assert "<html" in html
+        assert "</html>" in html
+        assert "<head>" in html
+        assert "<body" in html
+
+    def test_includes_dog_name_and_details(self):
+        dogs = [make_dog(name="Bella", breed="Spaniel", age="6 Months",
+                         gender="Female", location="Cardiff")]
+        html = list_dogs.format_html([("Test Rescue", dogs)])
+        assert "Bella" in html
+        assert "Spaniel" in html
+        assert "6 Months" in html
+        assert "Female" in html
+        assert "Cardiff" in html
+
+    def test_includes_profile_link(self):
+        dogs = [make_dog(url="https://example.org/bella")]
+        html = list_dogs.format_html([("Test Rescue", dogs)])
+        assert 'href="https://example.org/bella"' in html
+
+    def test_shows_paw_placeholder_when_no_photo(self):
+        dogs = [make_dog(photo_url="")]
+        html = list_dogs.format_html([("Test Rescue", dogs)])
+        assert "🐾" in html
+
+    def test_shows_img_when_photo_url_present(self):
+        dogs = [make_dog(photo_url="https://example.org/photo.jpg")]
+        html = list_dogs.format_html([("Test Rescue", dogs)])
+        assert '<img src="https://example.org/photo.jpg"' in html
+
+    def test_groups_by_site_with_heading_per_rescue(self):
+        dogs_a = [make_dog(name="Bella")]
+        dogs_b = [make_dog(name="Max", gender="Male", url="https://ex.org/max")]
+        html = list_dogs.format_html([
+            ("Cotswolds Dogs", dogs_a),
+            ("Jerry Green", dogs_b),
+        ])
+        assert "Cotswolds Dogs" in html
+        assert "Jerry Green" in html
+        # Site name should appear in a heading
+        assert "<h2" in html
+
+    def test_escapes_html_in_dog_data(self):
+        dogs = [make_dog(name="<script>alert(1)</script>")]
+        html = list_dogs.format_html([("Test", dogs)])
+        assert "<script>" not in html
+        assert "&lt;script&gt;" in html
+
+    def test_empty_results_returns_empty_page(self):
+        html = list_dogs.format_html([])
+        assert "No dogs found" in html
+
+    def test_no_external_resources(self):
+        dogs = [make_dog()]
+        html = list_dogs.format_html([("Test", dogs)])
+        # Should not reference external CSS, JS, or font CDNs
+        # (profile links use https which is expected)
+        for external in [".css", ".js", "@import", "googleapis", "cloudflare"]:
+            assert external not in html, f"Found external resource: {external}"
+
+
 class TestListLive:
     def test_fetches_and_parses_all_checkers(self, tmp_path: Path):
         data_dir = tmp_path / "data"
