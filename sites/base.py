@@ -6,7 +6,6 @@ from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from pathlib import Path
 
-
 # Ordered field names matching as_line() output
 FIELD_NAMES = ["status", "name", "age", "gender", "breed", "location", "photo_url", "url"]
 FIELD_COUNT = len(FIELD_NAMES)

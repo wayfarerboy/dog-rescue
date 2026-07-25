@@ -1,6 +1,6 @@
 """Tests for repair_cache.py."""
 
-from repair_cache import FIELD_COUNT, FIELD_NAMES, missing_fields, parse_entry
+from repair_cache import missing_fields, parse_entry
 
 
 class TestParseEntry:

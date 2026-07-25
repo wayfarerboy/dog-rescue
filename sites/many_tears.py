@@ -32,6 +32,7 @@ class ManyTearsChecker(SiteChecker):
             if not href:
                 continue
 
+            url = f"https://www.manytearsrescue.org{href}"
             name = self._text(card, "h3")
             breed = self._text(card, ".icon.breed")
             age = self._text(card, ".icon.age")
@@ -39,20 +40,35 @@ class ManyTearsChecker(SiteChecker):
             location = self._text(card, ".icon.location")
             photo_url = self._image_url(card)
 
+            # Fetch detail page for status extraction
+            detail_html = self._fetch_detail_page(url)
+            profile = self.extract_from_profile(detail_html)
+            status = profile.get("status", "")
+
+            # Filter out reserved / home-found dogs
+            if status in ("Reserved", "Home Found"):
+                continue
+
             dogs.append(
                 Dog(
                     name=name,
                     age=age,
                     gender=sex,
                     breed=breed,
-                    url=f"https://www.manytearsrescue.org{href}",
-                    status="",
+                    url=url,
+                    status=status,
                     location=location,
                     photo_url=photo_url,
                 )
             )
 
         return dogs
+
+    def _fetch_detail_page(self, url: str) -> str:
+        """Fetch a dog detail page. Overrideable for testing."""
+        resp = requests.get(url, timeout=30)
+        resp.raise_for_status()
+        return resp.text
 
     @staticmethod
     def _text(soup, selector: str) -> str:
