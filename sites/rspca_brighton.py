@@ -64,13 +64,14 @@ class RSPCABrightonChecker(SiteChecker):
             img_el = item.select_one("img")
             photo_url = img_el.get("src", "") if img_el else ""
 
-            # Fetch detail page for breed, age, gender
+            # Fetch detail page for breed, age, gender, location
             try:
                 detail_html = self._fetch_detail(link)
                 detail_soup = BeautifulSoup(detail_html, "html.parser")
                 breed = self._detail_field(detail_soup, "Breed:")
                 age = self._detail_field(detail_soup, "Age:")
                 gender_raw = self._detail_field(detail_soup, "Sex:")
+                location = self._detail_field(detail_soup, "Location:")
             except Exception:
                 # If detail fetch fails, skip this dog
                 continue
@@ -94,6 +95,7 @@ class RSPCABrightonChecker(SiteChecker):
                     age=age,
                     gender=gender,
                     breed=breed,
+                    location=location,
                     url=link,
                     status=status if status else "Available",
                     photo_url=photo_url,

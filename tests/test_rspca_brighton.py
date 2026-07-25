@@ -75,12 +75,13 @@ class TestParseListing:
         </div>"""
 
     @staticmethod
-    def _detail_html(breed, age, gender):
+    def _detail_html(breed, age, gender, location="Brighton Centre"):
         return f"""
         <div class="et_pb_post_content">
           <p><strong>Age:</strong><br/>{age}</p>
           <p><strong>Sex:</strong><br/>{gender}</p>
           <p><strong>Breed:</strong><br/>{breed}</p>
+          <p><strong>Location:</strong><br/>{location}</p>
         </div>"""
 
     def test_no_cards(self, tmp_path):
@@ -102,6 +103,7 @@ class TestParseListing:
         assert d.age == "6 months"
         assert d.gender == "Female"
         assert d.breed == "Spaniel"
+        assert d.location == "Brighton Centre"
         assert d.url == "https://rspca-brighton.org.uk/project/luna/"
         assert d.status == "New arrival"
         assert d.photo_url == "https://example.org/photos/luna.jpg"
@@ -256,3 +258,37 @@ class TestParseListing:
         dogs = c.parse(html)
         assert len(dogs) == 1
         assert dogs[0].photo_url == "https://example.org/photos/dot.jpg"
+        assert dogs[0].location == "Brighton Centre"
+
+    def test_location_extracted(self, tmp_path):
+        """Location field is extracted from detail page."""
+        html = self._make_card(
+            "Maple", "",
+            "https://rspca-brighton.org.uk/project/maple/",
+        )
+        c = RSPCABrightonChecker(str(tmp_path))
+        c._fetch_detail = lambda url: self._detail_html(
+            "Collie cross", "4 months", "Female", location="Patcham Animal Centre"
+        )
+        dogs = c.parse(html)
+        assert len(dogs) == 1
+        assert dogs[0].location == "Patcham Animal Centre"
+
+    def test_location_missing_on_detail(self, tmp_path):
+        """Location defaults to empty string when not on detail page."""
+        html = self._make_card(
+            "Ghost", "",
+            "https://rspca-brighton.org.uk/project/ghost/",
+        )
+        c = RSPCABrightonChecker(str(tmp_path))
+        # Detail page without Location field
+        detail = """
+        <div class="et_pb_post_content">
+          <p><strong>Age:</strong><br/>3 months</p>
+          <p><strong>Sex:</strong><br/>Female</p>
+          <p><strong>Breed:</strong><br/>Terrier</p>
+        </div>"""
+        c._fetch_detail = lambda url: detail
+        dogs = c.parse(html)
+        assert len(dogs) == 1
+        assert dogs[0].location == ""
