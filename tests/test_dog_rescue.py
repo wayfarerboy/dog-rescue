@@ -77,6 +77,7 @@ class TestMain:
             "url": "https://example.org",
             "status": "Available",
             "location": "Cardiff",
+            "photo_url": "",
         })()
 
         with (
@@ -112,6 +113,7 @@ class TestMain:
             "url": "https://a",
             "status": "",
             "location": "",
+            "photo_url": "",
         })()
 
         with (
@@ -144,6 +146,7 @@ class TestMain:
             "url": "https://a",
             "status": "",
             "location": "",
+            "photo_url": "",
         })()
 
         with (
@@ -179,6 +182,7 @@ class TestMain:
             "url": "https://a",
             "status": "",
             "location": "",
+            "photo_url": "",
         })()
 
         with (
