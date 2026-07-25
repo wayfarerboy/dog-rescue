@@ -14,7 +14,7 @@ class TestDog:
         )
         line = d.as_line()
         assert line == (
-            "Available | Bella | 6 Months | Female | Cocker Spaniel | Cardiff | "
+            "Available | Bella | 6 Months | Female | Cocker Spaniel | Cardiff |  | "
             "https://example.org/dogs/bella"
         )
 
@@ -27,7 +27,7 @@ class TestDog:
             url="https://example.org/max",
         )
         assert d.as_line() == (
-            " | Max | 1 Year Old | Male | Labrador |  | https://example.org/max"
+            " | Max | 1 Year Old | Male | Labrador |  |  | https://example.org/max"
         )
 
     def test_as_line_unique_url_key(self):
