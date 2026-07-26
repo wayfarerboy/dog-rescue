@@ -99,6 +99,15 @@ class SiteChecker(ABC):
         new_dogs = [d for d in current if d.url not in previous_urls]
         return new_dogs
 
+    def get_all(self) -> list[Dog]:
+        """Fetch and parse all current dogs from the site.
+
+        Override in checkers that need extra processing (e.g. detail-page
+        scraping) before the dog list is usable.
+        """
+        raw = self.fetch()
+        return self.parse(raw)
+
     def check(self) -> list[Dog]:
         """Fetch, parse, and return new dogs. Updates data file if any found.
 

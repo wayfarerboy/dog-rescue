@@ -58,16 +58,10 @@ class Paws2RescueChecker(SiteChecker):
                 dogs.append(dog)
         return dogs
 
-    def check(self) -> list[Dog]:
-        """Fetch, parse, scrape detail pages, filter, and return new dogs.
-
-        Post-scrape filtering: female only (already filtered at API),
-        age <= 12 months, small/medium size (already filtered at API).
-        """
+    def get_all(self) -> list[Dog]:
+        """Fetch, parse, and scrape detail pages for all dogs."""
         raw = self.fetch()
         dogs = self.parse(raw)
-
-        # Scrape detail pages for age, breed, and photo_url
         for dog in dogs:
             try:
                 detail_html = self._fetch_detail(dog.url)
@@ -79,8 +73,16 @@ class Paws2RescueChecker(SiteChecker):
                 if photo_url and not dog.photo_url:
                     dog.photo_url = photo_url
             except Exception:
-                # If detail page fails, leave fields as-is
                 pass
+        return dogs
+
+    def check(self) -> list[Dog]:
+        """Fetch, parse, scrape detail pages, filter, and return new dogs.
+
+        Post-scrape filtering: female only (already filtered at API),
+        age <= 12 months, small/medium size (already filtered at API).
+        """
+        dogs = self.get_all()
 
         # Post-scrape age filter
         filtered = [d for d in dogs if self._age_months(d.age) <= 12]

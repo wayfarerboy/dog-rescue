@@ -115,71 +115,75 @@ def main(dry_run: bool = False) -> None:
     for checker in checkers:
         try:
             previous_urls = checker._load_previous()
-            cached_before = checker.cached_count
-            new_dogs = checker.check()
-            listed = checker.cached_count
-
+            all_dogs = checker.get_all()
+            listed = len(all_dogs)
             total_listed += listed
 
-            # Build the status line piece by piece
+            # Build the filter-removal summary
             parts: list[str] = []
-            unfiltered_new = len(new_dogs)
+            dogs = all_dogs
 
-            if new_dogs and max_distance is not None:
+            if dogs and max_distance is not None:
                 if not getattr(checker, "bypass_distance_filter", False):
-                    before = len(new_dogs)
-                    new_dogs = filter_dogs_by_distance(new_dogs, distance_lookup, max_distance)
-                    removed = before - len(new_dogs)
+                    before = len(dogs)
+                    dogs = filter_dogs_by_distance(dogs, distance_lookup, max_distance)
+                    removed = before - len(dogs)
                     if removed:
                         parts.append(f"—{removed} far")
 
-            if new_dogs:
-                before = len(new_dogs)
-                new_dogs = filter_dogs_by_gender(new_dogs, keep="Female")
-                removed = before - len(new_dogs)
+            if dogs:
+                before = len(dogs)
+                dogs = filter_dogs_by_gender(dogs, keep="Female")
+                removed = before - len(dogs)
                 if removed:
                     parts.append(f"—{removed} gender")
 
-            if new_dogs:
-                before = len(new_dogs)
-                new_dogs = filter_dogs_by_age(new_dogs, max_months=12)
-                removed = before - len(new_dogs)
+            if dogs:
+                before = len(dogs)
+                dogs = filter_dogs_by_age(dogs, max_months=12)
+                removed = before - len(dogs)
                 if removed:
                     parts.append(f"—{removed} age")
 
-            if new_dogs:
-                before = len(new_dogs)
-                new_dogs = filter_dogs_by_breed(new_dogs, breed_exclusion)
-                removed = before - len(new_dogs)
+            if dogs:
+                before = len(dogs)
+                dogs = filter_dogs_by_breed(dogs, breed_exclusion)
+                removed = before - len(dogs)
                 if removed:
                     parts.append(f"—{removed} breed")
 
-            matched = len(new_dogs)
-            matched_cached = sum(1 for d in new_dogs if d.url in previous_urls)
-            matched_new = matched - matched_cached
+            matched = dogs
+            matched_count = len(matched)
+            matched_new_list = [d for d in matched if d.url not in previous_urls]
+            matched_cached_count = matched_count - len(matched_new_list)
+            matched_new_count = len(matched_new_list)
+            total_matched += matched_count
 
-            total_matched += matched
+            # Save matched dogs to cache (so diff works next run)
+            if matched_new_count or not checker._data_path.exists():
+                checker._save_current(matched)
 
             filters = " ".join(parts)
             if filters:
                 filters = " " + filters
 
-            if matched:
-                print(f"{checker.site_name}: {listed} listed{filters} → {matched} matched "
-                      f"({matched_cached} cached, {matched_new} new)", file=sys.stderr)
-                section = checker.format_section(
-                    new_dogs,
-                    checker.site_name,
-                    "Status | Name | Age | Gender | Breed | Location | Link",
-                )
-                if section:
-                    text_sections.append(section)
-                html_sites.append((checker.site_name, new_dogs))
-            elif unfiltered_new:
+            if matched_count:
+                print(f"{checker.site_name}: {listed} listed{filters} → {matched_count} matched "
+                      f"({matched_cached_count} cached, {matched_new_count} new)", file=sys.stderr)
+                if matched_new_count:
+                    section = checker.format_section(
+                        matched_new_list,
+                        checker.site_name,
+                        "Status | Name | Age | Gender | Breed | Location | Link",
+                    )
+                    if section:
+                        text_sections.append(section)
+                    html_sites.append((checker.site_name, matched_new_list))
+            elif parts:
                 print(f"{checker.site_name}: {listed} listed{filters} → 0 matched",
                       file=sys.stderr)
             else:
-                print(f"{checker.site_name}: {listed} listed → 0 new", file=sys.stderr)
+                print(f"{checker.site_name}: {listed} listed → 0 matched", file=sys.stderr)
 
         except Exception as exc:
             print(f"{checker.site_name}: ✗ Error: {exc}", file=sys.stderr)
