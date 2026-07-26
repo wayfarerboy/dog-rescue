@@ -33,7 +33,11 @@ class BrighterDaysChecker(SiteChecker):
 
         dogs: list[Dog] = []
         for card in cards:
-            detail_html = self._fetch_detail_page(card["url"])
+            try:
+                detail_html = self._fetch_detail_page(card["url"])
+            except requests.RequestException:
+                # Dog may have been removed since the listing was cached
+                continue
             breed, location = self._parse_detail_page(detail_html)
 
             dogs.append(
