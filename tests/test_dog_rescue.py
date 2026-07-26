@@ -99,7 +99,7 @@ class TestMain:
         mock_print = stack.enter_context(patch("builtins.print"))
         try:
             main()
-            mock_print.assert_called_with("No new dogs since last check.")
+            mock_print.assert_called_with("No new dogs matching all criteria.")
         finally:
             stack.close()
 

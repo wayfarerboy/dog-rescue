@@ -86,7 +86,7 @@ class GsdrChecker(SiteChecker):
             for name_div in urgent.select(".name"):
                 link = name_div.find("a")
                 if link:
-                    href = link.get("href", "")
+                    href = _strip_session_id(link.get("href", ""))
                     name = link.get_text(strip=True)
                     if href and href not in seen:
                         seen.add(href)
@@ -98,7 +98,7 @@ class GsdrChecker(SiteChecker):
             for name_div in featured.select(".name"):
                 link = name_div.find("a")
                 if link:
-                    href = link.get("href", "")
+                    href = _strip_session_id(link.get("href", ""))
                     name = link.get_text(strip=True)
                     if href and href not in seen:
                         seen.add(href)
@@ -210,3 +210,8 @@ class GsdrChecker(SiteChecker):
                 break
 
         return result
+
+
+def _strip_session_id(url: str) -> str:
+    """Remove osCommerce session ID from URLs so dogs match across runs."""
+    return re.sub(r"[?&]osCsid=[^&]+", "", url)

@@ -68,6 +68,13 @@ class SiteChecker(ABC):
         """Parse raw data into a list of Dog objects."""
         ...
 
+    @property
+    def cached_count(self) -> int:
+        """Number of dogs in the cache file (0 if no cache yet)."""
+        if not self._data_path.exists():
+            return 0
+        return len(self._data_path.read_text().strip().splitlines())
+
     def _load_previous(self) -> set[str]:
         """Load previously seen dog URLs from the data file."""
         if not self._data_path.exists():
