@@ -99,7 +99,9 @@ class TestMain:
         mock_print = stack.enter_context(patch("builtins.print"))
         try:
             main()
-            mock_print.assert_called_with("No new dogs matching all criteria.")
+            # Last print is the summary line to stderr
+            calls = [c[0][0] for c in mock_print.call_args_list]
+            assert any("0 matched criteria — none new." in c for c in calls)
         finally:
             stack.close()
 
