@@ -14,6 +14,7 @@ import re
 from typing import ClassVar
 
 import cloudscraper
+import requests as _requests
 from bs4 import BeautifulSoup
 
 from .base import Dog, SiteChecker
@@ -108,9 +109,13 @@ class BlueCrossChecker(SiteChecker):
     def _fetch_profile(self, url: str) -> str:
         """Fetch a single pet profile page. Overrideable for testing."""
         scraper = self._get_scraper()
-        resp = scraper.get(url, timeout=30)
-        resp.raise_for_status()
-        return resp.text
+        try:
+            resp = scraper.get(url, timeout=30)
+            resp.raise_for_status()
+            return resp.text
+        except _requests.exceptions.TooManyRedirects:
+            # Some profiles (e.g. bella-1158684) redirect-loop; skip.
+            return ""
 
     @staticmethod
     def _parse_profile(
