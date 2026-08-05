@@ -1,7 +1,7 @@
 ---
 name: issue-handler
 description: Implements a single GitHub issue using TDD then runs a two-axis review (Standards + Spec)
-model: deepseek/deepseek-v4-pro
+model: deepseek/deepseek-v4-flash
 tools: read, write, edit, bash
 maxExecutionTimeMs: 1800000
 maxSubagentDepth: 0

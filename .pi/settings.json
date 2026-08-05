@@ -7,7 +7,7 @@
   "subagents": {
     "agentOverrides": {
       "issue-handler": {
-        "model": "deepseek/deepseek-v4-pro"
+        "model": "deepseek/deepseek-v4-flash"
       }
     },
     "disableBuiltins": false
