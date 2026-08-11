@@ -25,7 +25,7 @@ and sends email notifications via msmtp.
 ## Setup
 
 ```bash
-pip install -r requirements.txt
+uv sync
 cp .env.example .env   # edit with your email + Google Maps API key
 brew install msmtp      # for sending email
 ```
@@ -44,7 +44,7 @@ brew install msmtp      # for sending email
 ### Daily check + email
 
 ```bash
-python3 dog_rescue.py
+uv run python dog_rescue.py
 ```
 
 Fetches all sites live, filters by distance, caches results in `data/`,
@@ -53,8 +53,8 @@ and emails new dogs. Dogs from centers beyond `MAX_DISTANCE_MILES` are excluded.
 ### Terminal listing
 
 ```bash
-python3 list_dogs.py             # live-fetch all sites
-python3 list_dogs.py --cached    # read from cache files
+uv run python list_dogs.py             # live-fetch all sites
+uv run python list_dogs.py --cached    # read from cache files
 ```
 
 Prints a pipe-delimited table of all available dogs.
@@ -62,8 +62,8 @@ Prints a pipe-delimited table of all available dogs.
 ### HTML web page
 
 ```bash
-python3 list_dogs.py --html             # live-fetch → dogs.html
-python3 list_dogs.py --html --cached    # cache → dogs.html
+uv run python list_dogs.py --html             # live-fetch → dogs.html
+uv run python list_dogs.py --html --cached    # cache → dogs.html
 ```
 
 Writes a self-contained `dogs.html` with styled cards, grouped by rescue,
@@ -72,15 +72,15 @@ with photo thumbnails and profile links. No external CSS/JS/fonts needed.
 ### Cache management
 
 ```bash
-python3 populate_caches.py           # build baseline caches for all 13 sites
-python3 repair_cache.py              # repair entries by scraping profile pages
-python3 repair_cache.py --dry-run    # preview repairs without fetching
+uv run python populate_caches.py           # build baseline caches for all 13 sites
+uv run python repair_cache.py              # repair entries by scraping profile pages
+uv run python repair_cache.py --dry-run    # preview repairs without fetching
 ```
 
 ### Cron (daily at 8am)
 
 ```
-0 8 * * * cd /Users/alpagan/Documents/dog-rescue && python3 dog_rescue.py
+0 8 * * * cd /Users/alpagan/Documents/dog-rescue && /Users/alpagan/.local/bin/uv run python dog_rescue.py
 ```
 
 ## Structure
