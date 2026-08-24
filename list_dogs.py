@@ -2,8 +2,12 @@
 """List all available dogs across rescue sites.
 
 Usage:
-  python3 list_dogs.py           # Live fetch all sites
-  python3 list_dogs.py --cached  # Read from data/*.txt cache files
+  python3 list_dogs.py              # Live fetch all sites
+  python3 list_dogs.py --cached     # Read from data/*.txt cache files
+  python3 list_dogs.py --html       # Live fetch -> dogs.html
+  python3 list_dogs.py --discard <url>    # Mark a dog as discounted
+  python3 list_dogs.py --un-discard <url> # Un-mark a dog
+  python3 list_dogs.py --hide-discarded   # Only show unseen dogs
 """
 
 from __future__ import annotations
@@ -12,6 +16,7 @@ import sys
 from pathlib import Path
 
 from breed_exclusion import BreedExclusionList, filter_dogs_by_breed
+from discount import DiscountedList
 from filters import filter_dogs_by_age, filter_dogs_by_gender
 from sites.base import Dog, _esc, _photo_tag
 from sites.registry import get_active_checkers
@@ -38,8 +43,14 @@ def dog_from_line(line: str) -> Dog:
     )
 
 
-def format_html(results: list[tuple[str, list[Dog]]]) -> str:
-    """Format dogs as a self-contained HTML document with card layout."""
+def format_html(
+    results: list[tuple[str, list[Dog]]],
+    discounted: DiscountedList | None = None,
+) -> str:
+    """Format dogs as a self-contained HTML document with card layout.
+
+    Discounted dogs are dimmed, struck through, and labelled.
+    """
     if not results:
         return (
             "<!DOCTYPE html>\n<html lang=\"en\">\n<head>"
@@ -54,6 +65,7 @@ def format_html(results: list[tuple[str, list[Dog]]]) -> str:
     for site_name, dogs in results:
         cards: list[str] = []
         for d in dogs:
+            is_discarded = bool(discounted and d.url in discounted)
             name = _esc(d.name)
             age = _esc(d.age)
             gender = _esc(d.gender)
@@ -62,18 +74,38 @@ def format_html(results: list[tuple[str, list[Dog]]]) -> str:
             url = _esc(d.url)
             photo_html = _photo_tag(d.photo_url)
 
-            cards.append(
-                '<div style="background:#fff;border:1px solid #e0e0e0;'
+            card_style = (
+                'background:#fff;border:1px solid #e0e0e0;border-radius:10px;'
+                'overflow:hidden;display:flex;margin-bottom:14px;'
+                'transition:box-shadow .15s;opacity:0.45'
+                if is_discarded
+                else 'background:#fff;border:1px solid #e0e0e0;'
                 'border-radius:10px;overflow:hidden;display:flex;'
-                'margin-bottom:14px;transition:box-shadow .15s" '
+                'margin-bottom:14px;transition:box-shadow .15s'
+            )
+            name_style = (
+                'font-size:16px;font-weight:700;color:#222;'
+                'margin-bottom:2px;text-decoration:line-through'
+                if is_discarded
+                else 'font-size:16px;font-weight:700;color:#222;margin-bottom:2px'
+            )
+            badge = (
+                '<span style="font-size:11px;font-weight:700;color:#fff;'
+                'background:#9a9a9a;border-radius:4px;padding:2px 8px;'
+                'margin-left:8px;vertical-align:middle">discounted</span>'
+                if is_discarded
+                else ''
+            )
+
+            cards.append(
+                f'<div style="{card_style}" '
                 'onmouseover="this.style.boxShadow=\'0 2px 12px rgba(0,0,0,0.08)\'" '
                 'onmouseout="this.style.boxShadow=\'none\'">'
                 f'<div style="width:100px;min-height:100px;background:#f0ede8;'
                 f'flex-shrink:0;display:flex;align-items:center;'
                 f'justify-content:center;font-size:40px">{photo_html}</div>'
                 '<div style="padding:14px 16px;flex:1;min-width:0">'
-                f'<div style="font-size:16px;font-weight:700;color:#222;'
-                f'margin-bottom:2px">{name}</div>'
+                f'<div style="{name_style}">{name}{badge}</div>'
                 f'<div style="font-size:13px;color:#555;margin-bottom:1px">'
                 f'{breed or "&mdash;"}</div>'
                 f'<div style="font-size:12px;color:#888;margin-bottom:6px">'
@@ -104,6 +136,16 @@ def format_html(results: list[tuple[str, list[Dog]]]) -> str:
 
     total = sum(len(dogs) for _, dogs in results)
     total_label = "1 dog" if total == 1 else f"{total} dogs"
+    discarded_count = 0
+    if discounted:
+        discarded_count = sum(
+            1 for _, dogs in results for d in dogs if d.url in discounted
+        )
+    new_count = total - discarded_count
+    summary = (
+        f"Female · under 1 year · breed-filtered · {len(results)} rescues · "
+        f"{new_count} new / {discarded_count} discounted"
+    )
 
     return (
         "<!DOCTYPE html>\n"
@@ -120,14 +162,20 @@ def format_html(results: list[tuple[str, list[Dog]]]) -> str:
         f'<h1 style="font-size:24px;font-weight:700;color:#222;'
         f'margin:0 0 4px 0">🐾 {total_label} available</h1>\n'
         f'<p style="font-size:13px;color:#888;margin:0 0 24px 0">'
-        f'Female · under 1 year · breed-filtered · {len(results)} rescues</p>\n'
+        f'{_esc(summary)}</p>\n'
         + "\n".join(sections)
         + "\n</div>\n</body>\n</html>"
     )
 
 
-def format_table(results: list[tuple[str, list[Dog]]]) -> str:
-    """Format dogs as a pipe-delimited table string."""
+def format_table(
+    results: list[tuple[str, list[Dog]]],
+    discounted: DiscountedList | None = None,
+) -> str:
+    """Format dogs as a pipe-delimited table string.
+
+    Discounted dogs are prefixed with "[D]".
+    """
     if not results:
         return "No dogs found."
 
@@ -138,9 +186,10 @@ def format_table(results: list[tuple[str, list[Dog]]]) -> str:
 
     for _site_name, dogs in results:
         for d in dogs:
+            mark = "  [D]" if (discounted and d.url in discounted) else ""
             lines.append(
                 f"{d.status} | {d.name} | {d.age} | {d.gender} | "
-                f"{d.breed} | {d.location} | {d.url}"
+                f"{d.breed} | {d.location} | {d.url}{mark}"
             )
 
     return "\n".join(lines)
@@ -212,16 +261,40 @@ def main() -> None:
     args = sys.argv[1:]
     cached = "--cached" in args
     html = "--html" in args
+    hide_discarded = "--hide-discarded" in args
+
+    discounted = DiscountedList(str(DATA_DIR))
+
+    # Fast path: just mark/unmark a dog without listing.
+    if "--discard" in args:
+        idx = args.index("--discard")
+        if idx + 1 < len(args):
+            discounted.add(args[idx + 1])
+            print(f"Discounted: {args[idx + 1]}")
+        return
+    if "--un-discard" in args:
+        idx = args.index("--un-discard")
+        if idx + 1 < len(args):
+            discounted.remove(args[idx + 1])
+            print(f"Removed from discounted: {args[idx + 1]}")
+        return
 
     results = list_cached(str(DATA_DIR)) if cached else list_live(str(DATA_DIR))
 
+    if hide_discarded:
+        results = [
+            (site_name, [d for d in dogs if d.url not in discounted])
+            for site_name, dogs in results
+        ]
+        results = [(s, ds) for s, ds in results if ds]
+
     if html:
-        output = format_html(results)
+        output = format_html(results, discounted=discounted)
         Path("dogs.html").write_text(output)
         total = sum(len(dogs) for _, dogs in results)
         print(f"Wrote {total} dogs to dogs.html")
     else:
-        print(format_table(results))
+        print(format_table(results, discounted=discounted))
 
 
 if __name__ == "__main__":

@@ -24,6 +24,7 @@ CACHE_SUFFIX = ".txt"
 TOO_FAR_PATH = DATA_DIR / "too-far.txt"
 DISTANCES_PATH = DATA_DIR / "distances.json"
 EXCLUDED_BREEDS_PATH = DATA_DIR / "excluded-breeds.txt"
+DISCOUNTED_PATH = DATA_DIR / "discounted.txt"
 
 # ── helpers ────────────────────────────────────────────────────────────
 
@@ -78,6 +79,37 @@ def _press_any_key() -> None:
     print()
 
 
+def _copy_clipboard(text: str) -> bool:
+    """Copy text to the system clipboard.
+
+    Tries platform-native tools (pbcopy/xclip/clip). Returns True on success.
+    """
+    import platform
+
+    system = platform.system()
+    try:
+        if system == "Darwin":
+            return subprocess.run(
+                ["pbcopy"], input=text, text=True, check=True
+            ).returncode == 0
+        if system == "Windows":
+            return subprocess.run(
+                ["clip"], input=text, text=True, check=True
+            ).returncode == 0
+        # Linux / other
+        for cmd in (["xclip", "-selection", "clipboard"], ["xsel", "--clipboard", "--input"]):
+            try:
+                if subprocess.run(cmd, input=text, text=True, check=True).returncode == 0:
+                    return True
+            except FileNotFoundError:
+                continue
+    except FileNotFoundError:
+        pass
+    except subprocess.CalledProcessError:
+        pass
+    return False
+
+
 def _header(title: str) -> None:
     _clear()
     print(f"\n  {title}")
@@ -103,6 +135,41 @@ def _menu(title: str, options: list[tuple[str, str]], prompt: str = "Choose") ->
 
 # ── main menu actions ──────────────────────────────────────────────────
 
+# ── help & instructions ───────────────────────────────────────────────
+
+def _help() -> None:
+    """Show on-screen instructions for using the CLI."""
+    _header("How to Use the Dog Rescue CLI")
+    print(
+        "  Navigate: type the letter/number next to an option and press Enter.\n"
+        "  'q' (or 0) at any submenu returns to the previous menu.\n"
+        "  'q' at the main menu exits.\n"
+        "\n"
+        "  Your daily workflow\n"
+        "  -------------------\n"
+        "  1. Daily Check -> fetch every site, filter by distance, email new dogs.\n"
+        "  2. List Dogs    -> see what is currently available (table or HTML page).\n"
+        "  3. Browse & Mark -> step through dogs; a number copies that dog's URL\n"
+        "      to the clipboard (so you can open it in a browser, even over SSH);\n"
+        "      'd<num>' marks a dog you've decided against as discounted.\n"
+        "     Discounted dogs show as [D] in the terminal and are dimmed /\n"
+        "     struck-through on the HTML page, so new dogs stand out next run.\n"
+        "\n"
+        "  Menus\n"
+        "  -----\n"
+        "  1 Help / How to use ...... this screen\n"
+        "  2 Daily Check + Email ...... fetch all -> filter -> email new dogs\n"
+        "  3 List Dogs ............... terminal table / HTML page of available dogs\n"
+        "  4 Manage Discounted ....... mark/unmark/view dogs you've looked at\n"
+        "  5 Cache Management ........ rebuild / repair / browse per-site cache files\n"
+        "  6 Distance & Location ..... driving distances, too-far list, breed exclusions\n"
+        "  7 Discover New Rescues .... search for new rescue sites (Places API)\n"
+        "  8 Tests & Diagnostics ..... run tests, lint, audit, environment info\n"
+        "  0 Exit\n"
+    )
+    _press_any_key()
+
+
 def _daily_check():
     """Fetch all sites, filter by distance, email new dogs."""
     _header("Daily Check + Email")
@@ -121,6 +188,7 @@ def _list_dogs_menu():
             ("3", "Live fetch → HTML file (dogs.html)"),
             ("4", "Cached data → HTML file (dogs.html)"),
             ("5", "Open dogs.html in browser"),
+            ("6", "List only unseen (cached, hide discounted)"),
             ("0", "Back to main menu"),
         ])
         if choice is None or choice == "0":
@@ -147,6 +215,143 @@ def _list_dogs_menu():
                 subprocess.run(["open", str(html)], check=False)
             else:
                 print("  dogs.html not found. Generate it first (options 3 or 4).")
+                _press_any_key()
+        elif choice == "6":
+            _header("List Only Unseen (cached, hide discounted)")
+            _run("list_dogs.py", "--cached", "--hide-discarded")
+            _press_any_key()
+
+
+# ── manage discounted dogs ────────────────────────────────────────────
+
+def _discounted_menu():
+    while True:
+        choice = _menu("Manage Discounted Dogs", [
+            ("1", "Browse & mark dogs (interactive, copy URL to clipboard)"),
+            ("2", "View / manage discounted list (add / remove by number)"),
+            ("0", "Back to main menu"),
+        ])
+        if choice is None or choice == "0":
+            return
+        if choice == "1":
+            _browse_mark_dogs()
+        elif choice == "2":
+            _view_discounted()
+
+
+# ── browse & mark dogs ────────────────────────────────────────────────
+
+def _browse_mark_dogs():
+    """Interactive browse: copy URLs to clipboard and mark dogs as discounted.
+
+    - Enter a number  -> copy that dog's URL to the system clipboard.
+    - d<number>       -> toggle discounted state for that dog.
+    - r               -> re-fetch.
+    - 0 / q           -> back.
+    """
+    from discount import DiscountedList
+    from list_dogs import list_cached, list_live
+    from sites.base import Dog
+
+    discounted = DiscountedList(str(DATA_DIR))
+
+    source = input("  Live fetch or cached? [l/c] (l): ").strip().lower()
+    cached = source == "c"
+
+    while True:
+        _header("Browse & Mark Dogs (" + ("cached" if cached else "live") + ")")
+        print("  Fetching...")
+        results = list_cached(str(DATA_DIR)) if cached else list_live(str(DATA_DIR))
+
+        dogs: list[tuple[str, Dog]] = []
+        for site_name, site_dogs in results:
+            for d in site_dogs:
+                dogs.append((site_name, d))
+
+        if not dogs:
+            print("  No dogs found.\n")
+            _press_any_key()
+            return
+
+        for i, (_site_name, d) in enumerate(dogs, 1):
+            mark = "[D]" if d.url in discounted else "   "
+            print(f"  {i:>3}. {mark} {d.name}")
+            print(f"       {d.breed or '?'} · {d.gender or '?'} · {d.age or '?'}")
+            print(f"       {d.url}")
+
+        print()
+        print("  Enter a number to copy its URL to clipboard.")
+        print("  d<num> = toggle discounted · r = refresh · 0/q = back")
+        print()
+        prompt = "  > "
+        cmd = input(prompt).strip().lower()
+
+        if cmd in ("0", "q", ""):
+            return
+        if cmd == "r":
+            _header("Refreshing...")
+            continue
+        if cmd.startswith("d"):
+            num = cmd[1:].strip()
+            if num.isdigit():
+                idx = int(num) - 1
+                if 0 <= idx < len(dogs):
+                    url = dogs[idx][1].url
+                    now_discounted = discounted.toggle(url)
+                    state = "discounted" if now_discounted else "un-discounted"
+                    print(f"  → Marked {dogs[idx][1].name} as {state}.")
+                    _press_any_key()
+                    continue
+        if cmd.isdigit():
+            idx = int(cmd) - 1
+            if 0 <= idx < len(dogs):
+                url = dogs[idx][1].url
+                ok = _copy_clipboard(url)
+                if ok:
+                    print(f"  → Copied {dogs[idx][1].name} URL to clipboard.")
+                else:
+                    print("  → Clipboard tool not available. URL below:")
+                    print(f"     {url}")
+                _press_any_key()
+                continue
+        print(f"  Unrecognised input: {cmd}")
+        _press_any_key()
+
+
+def _view_discounted():
+    """View and manage the discounted-dogs list."""
+    from discount import DiscountedList
+
+    discounted = DiscountedList(str(DATA_DIR))
+    urls = discounted.urls()
+
+    _header("Discounted Dogs")
+    if not urls:
+        print("  No dogs marked as discounted yet.")
+    else:
+        for i, url in enumerate(urls, 1):
+            print(f"  {i:>3}. {url}")
+        print(f"\n  {len(urls)} dog(s) discounted")
+
+    print()
+    action = input("  [a]dd URL, [r]emove by number, or [Enter] back: ").strip().lower()
+    if action == "a":
+        url = input("  Dog URL to discount: ").strip()
+        if url:
+            discounted.add(url)
+            print(f"  Discounted: {url}")
+            _press_any_key()
+    elif action == "r":
+        num = input("  Number to remove: ").strip()
+        if num.isdigit():
+            idx = int(num) - 1
+            if 0 <= idx < len(urls):
+                removed = urls[idx]
+                discounted.remove(removed)
+                print(f"  Removed: {removed}")
+                _press_any_key()
+            else:
+                print("  Number out of range.")
                 _press_any_key()
 
 
@@ -382,7 +587,6 @@ def _distance_menu():
             ("3", "Look up a location"),
             ("4", "Evaluate rescue centres (auto-detect too-far)"),
             ("5", "View / manage breed exclusion list"),
-            ("6", "Discover new rescues (Places API search)"),
             ("0", "Back to main menu"),
         ])
         if choice is None or choice == "0":
@@ -397,10 +601,6 @@ def _distance_menu():
             _evaluate_rescue_distances()
         elif choice == "5":
             _view_breed_exclusion()
-        elif choice == "6":
-            _header("Discover New Rescues")
-            _run("discover_rescues.py")
-            _press_any_key()
 
 
 # ── tests & diagnostics ────────────────────────────────────────────────
@@ -523,25 +723,36 @@ def main() -> None:
 
     while True:
         choice = _menu("Dog Rescue CLI", [
-            ("1", "Daily Check + Email  (fetch all → filter → email)"),
-            ("2", "List Dogs  (terminal table / HTML output)"),
-            ("3", "Cache Management  (populate / repair / browse)"),
-            ("4", "Distance & Location  (distances, too-far list)"),
-            ("5", "Tests & Diagnostics  (pytest, ruff, env)"),
+            ("1", "Help / How to use"),
+            ("2", "Daily Check + Email  (fetch all → filter → email)"),
+            ("3", "List Dogs  (terminal table / HTML output)"),
+            ("4", "Manage Discounted Dogs  (mark / unmark / view)"),
+            ("5", "Cache Management  (populate / repair / browse)"),
+            ("6", "Distance & Location  (distances, too-far list)"),
+            ("7", "Discover New Rescues  (Places API search)"),
+            ("8", "Tests & Diagnostics  (pytest, ruff, env)"),
             ("0", "Exit"),
         ])
         if choice is None or choice == "0":
             print("\n  Bye!\n")
             break
         if choice == "1":
-            _daily_check()
+            _help()
         elif choice == "2":
-            _list_dogs_menu()
+            _daily_check()
         elif choice == "3":
-            _cache_menu()
+            _list_dogs_menu()
         elif choice == "4":
-            _distance_menu()
+            _discounted_menu()
         elif choice == "5":
+            _cache_menu()
+        elif choice == "6":
+            _distance_menu()
+        elif choice == "7":
+            _header("Discover New Rescues")
+            _run("discover_rescues.py")
+            _press_any_key()
+        elif choice == "8":
             _tests_menu()
 
 

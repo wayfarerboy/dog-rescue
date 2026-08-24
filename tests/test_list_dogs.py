@@ -6,6 +6,7 @@ from pathlib import Path
 from unittest.mock import patch
 
 import list_dogs
+from discount import DiscountedList
 from sites.base import Dog
 
 
@@ -89,6 +90,39 @@ class TestFormatTable:
         ]
         assert len(data_lines) == 1
         assert " | " in data_lines[0]
+
+
+class TestDiscountedMarker:
+    def test_table_marks_discounted_dog(self, tmp_path: Path):
+        discounted = DiscountedList(str(tmp_path))
+        discounted.add("https://example.org/bella")
+        dogs = [make_dog(), make_dog(name="Luna", url="https://example.org/luna")]
+        table = list_dogs.format_table([("Test", dogs)], discounted=discounted)
+        assert "https://example.org/bella  [D]" in table
+        assert "https://example.org/luna" in table
+        assert "https://example.org/luna  [D]" not in table
+
+    def test_table_marks_nothing_when_no_discounted(self, tmp_path: Path):
+        discounted = DiscountedList(str(tmp_path))
+        dogs = [make_dog()]
+        table = list_dogs.format_table([("Test", dogs)], discounted=discounted)
+        assert "[D]" not in table
+
+    def test_html_dims_and_badges_discounted(self, tmp_path: Path):
+        discounted = DiscountedList(str(tmp_path))
+        discounted.add("https://example.org/bella")
+        dogs = [make_dog(), make_dog(name="Luna", url="https://example.org/luna")]
+        html = list_dogs.format_html([("Test", dogs)], discounted=discounted)
+        assert "discounted" in html
+        assert "line-through" in html
+        assert "opacity:0.45" in html
+
+    def test_html_counts_new_vs_discounted(self, tmp_path: Path):
+        discounted = DiscountedList(str(tmp_path))
+        discounted.add("https://example.org/bella")
+        dogs = [make_dog(), make_dog(name="Luna", url="https://example.org/luna")]
+        html = list_dogs.format_html([("Test", dogs)], discounted=discounted)
+        assert "1 new / 1 discounted" in html
 
 
 class TestListCached:
