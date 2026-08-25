@@ -35,6 +35,14 @@ next listing makes it obvious what is new versus already seen.
   browser — important because the CLI is often run over SSH — and `d<num>`
   toggles that dog's discounted state. A "Manage discounted list" view lists,
   adds, and removes entries by hand.
+- **Marking from the HTML page.** The generated page embeds a small script that
+  detects whether it is served over HTTP. A tiny local server (`serve.py`,
+  reachable via **List Dogs → Serve HTML in browser**) serves the page and
+  exposes `GET /api/discounted` and `POST /api/discounted/toggle`. Each card
+  carries a **Discount / Un-discount** button wired to that endpoint, so a
+  click persists straight to `data/discounted.txt` and the page updates in
+  place. Opened as a plain `file://` file, the buttons are disabled and only
+  the static markers baked in at generation time are shown.
 
 ## Consequences
 
@@ -45,3 +53,6 @@ next listing makes it obvious what is new versus already seen.
   removes it. A dog whose URL changes is treated as new.
 - No reason/note is recorded per discounted dog (kept intentionally simple);
   a note field could be added later if the need arises.
+- The browser toggle updates the on-disk list on the machine running the
+  server (the same local `data/discounted.txt` the CLI reads), keeping every
+  view — terminal, HTML, and daily check — consistent.

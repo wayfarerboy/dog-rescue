@@ -41,7 +41,8 @@ Dog Rescue CLI
 │    ├─ 3  Live fetch → HTML file (dogs.html)
 │    ├─ 4  Cached data → HTML file
 │    ├─ 5  Open dogs.html in browser
-│    └─ 6  List only unseen (cached, hide discounted)
+│    ├─ 6  Serve HTML in browser (live discount toggles)
+│    └─ 7  List only unseen (cached, hide discounted)
 ├─ 4  Manage Discounted Dogs     track dogs you've looked at and dismissed
 │    ├─ 1  Browse & mark (interactive)
 │    └─ 2  View / manage discounted list
@@ -63,6 +64,10 @@ Dog Rescue CLI
 
 ## Browsing & marking dogs as "discounted"
 
+There are two ways to mark a dog as discounted.
+
+### From the terminal (Browse & mark)
+
 In **Manage Discounted Dogs → Browse & mark**, each dog is numbered and shown
 with its details and profile URL:
 
@@ -73,6 +78,24 @@ with its details and profile URL:
 - Type **`d<number>`** (e.g. `d7`) → toggles that dog as **discounted**
   (looked at and dismissed).
 - **`r`** → re-fetch. **`0`/`q`** → back.
+
+### From the HTML page (visual)
+
+Use **List Dogs → Serve HTML in browser**. This starts a tiny local server
+(`serve.py`) and opens the page in your browser. Every card now has a
+**Discount / Un-discount** button that saves straight back to
+`data/discounted.txt` — so clicking it in the page **updates the system**
+immediately (badge, strikethrough, and the `N new / M discounted` count all
+refresh in place). Press **Ctrl-C** in the terminal to stop the server.
+
+The server binds to all interfaces and prints a **LAN URL** (e.g.
+`http://192.168.1.10:8000/`) that other devices on your network can open to
+browse and mark dogs too. You can also pass a specific interface/port:
+`python3 serve.py 9000` or `python3 serve.py --host 0.0.0.0 --port 8000`.
+
+> If you just open the generated `dogs.html` file directly (file://), the
+> buttons are disabled and it shows the static markers from when the file was
+> generated — use the **Serve HTML** option for live toggling.
 
 ### Where discounted dogs appear
 

@@ -24,6 +24,78 @@ from sites.registry import get_active_checkers
 SCRIPT_DIR = Path(__file__).resolve().parent
 DATA_DIR = SCRIPT_DIR / "data"
 
+# Inline JS: when the HTML is served over HTTP (see serve.py) it fetches the
+# live discounted set and wires up the per-card Discount/Un-discount buttons so
+# a click persists to data/discounted.txt. Opened as a plain file (file://) it
+# degrades to the static markers baked in at generation time.
+_HTML_JS = """<script>
+(function () {
+  var cards = function () {
+    return Array.prototype.slice.call(document.querySelectorAll('[data-dog-url]'));
+  };
+  function applyState(card, discounted) {
+    card.style.opacity = discounted ? '0.45' : '1';
+    var nameEl = card.querySelector('.dog-name');
+    if (nameEl) nameEl.style.textDecoration = discounted ? 'line-through' : 'none';
+    var badge = card.querySelector('.dog-badge');
+    if (discounted && !badge) {
+      badge = document.createElement('span');
+      badge.className = 'dog-badge';
+      badge.textContent = 'discounted';
+      badge.style.cssText = 'font-size:11px;font-weight:700;color:#fff;' +
+        'background:#9a9a9a;border-radius:4px;padding:2px 8px;margin-left:8px;' +
+        'vertical-align:middle';
+      var n = card.querySelector('.dog-name');
+      if (n) n.appendChild(badge);
+    } else if (!discounted && badge) {
+      badge.parentNode.removeChild(badge);
+    }
+    var btn = card.querySelector('.disc-btn');
+    if (btn) {
+      btn.textContent = discounted ? 'Un-discount' : 'Discount';
+      btn.style.background = discounted ? '#9a9a9a' : '#e8e8e8';
+      btn.style.color = discounted ? '#fff' : '#555';
+    }
+  }
+  function renderCounts(set) {
+    var total = cards().length;
+    var discarded = cards().filter(function (c) {
+      return set.has(c.getAttribute('data-dog-url'));
+    }).length;
+    var p = document.getElementById('summary');
+    if (p) p.textContent = p.getAttribute('data-base') + ' \u00b7 ' +
+      (total - discarded) + ' new / ' + discarded + ' discounted';
+  }
+  function loadSet() {
+    return fetch('/api/discounted').then(function (r) { return r.json(); })
+      .then(function (d) { return new Set((d.urls || [])); });
+  }
+  function toggle(url) {
+    fetch('/api/discounted/toggle?url=' + encodeURIComponent(url), { method: 'POST' })
+      .then(function () { return loadSet(); })
+      .then(function (set) {
+        cards().forEach(function (c) { applyState(c, set.has(c.getAttribute('data-dog-url'))); });
+        renderCounts(set);
+      });
+  }
+  loadSet().then(function (set) {
+    cards().forEach(function (c) {
+      var url = c.getAttribute('data-dog-url');
+      applyState(c, set.has(url));
+      var btn = c.querySelector('.disc-btn');
+      if (btn) btn.onclick = function () { toggle(url); };
+    });
+    renderCounts(set);
+  }).catch(function () {
+    // Not served over HTTP (opened as a file) — keep static markers, disable toggles.
+    cards().forEach(function (c) {
+      var btn = c.querySelector('.disc-btn');
+      if (btn) { btn.disabled = true; btn.textContent = 'discount (use ./dogs)'; }
+    });
+  });
+})();
+</script>"""
+
 
 def dog_from_line(line: str) -> Dog:
     """Parse a pipe-delimited cache line into a Dog object."""
@@ -90,22 +162,24 @@ def format_html(
                 else 'font-size:16px;font-weight:700;color:#222;margin-bottom:2px'
             )
             badge = (
-                '<span style="font-size:11px;font-weight:700;color:#fff;'
-                'background:#9a9a9a;border-radius:4px;padding:2px 8px;'
+                '<span class="dog-badge" style="font-size:11px;font-weight:700;'
+                'color:#fff;background:#9a9a9a;border-radius:4px;padding:2px 8px;'
                 'margin-left:8px;vertical-align:middle">discounted</span>'
                 if is_discarded
                 else ''
             )
+            escaped_url = _esc(d.url)
+            btn_label = "Un-discount" if is_discarded else "Discount"
 
             cards.append(
-                f'<div style="{card_style}" '
+                f'<div data-dog-url="{escaped_url}" style="{card_style}" '
                 'onmouseover="this.style.boxShadow=\'0 2px 12px rgba(0,0,0,0.08)\'" '
                 'onmouseout="this.style.boxShadow=\'none\'">'
                 f'<div style="width:100px;min-height:100px;background:#f0ede8;'
                 f'flex-shrink:0;display:flex;align-items:center;'
                 f'justify-content:center;font-size:40px">{photo_html}</div>'
                 '<div style="padding:14px 16px;flex:1;min-width:0">'
-                f'<div style="{name_style}">{name}{badge}</div>'
+                f'<div class="dog-name" style="{name_style}">{name}{badge}</div>'
                 f'<div style="font-size:13px;color:#555;margin-bottom:1px">'
                 f'{breed or "&mdash;"}</div>'
                 f'<div style="font-size:12px;color:#888;margin-bottom:6px">'
@@ -118,6 +192,10 @@ def format_html(
                 f'border:1px solid #1a73e8;border-radius:4px;'
                 f'padding:5px 12px;display:inline-block" target="_blank">'
                 f'View profile →</a>'
+                f'<button type="button" class="disc-btn" style="font-size:12px;'
+                f'font-weight:600;background:#e8e8e8;color:#555;border:none;'
+                f'border-radius:4px;padding:5px 12px;margin-left:8px;'
+                f'cursor:pointer">{btn_label}</button>'
                 '</div></div>'
             )
 
@@ -142,10 +220,10 @@ def format_html(
             1 for _, dogs in results for d in dogs if d.url in discounted
         )
     new_count = total - discarded_count
-    summary = (
-        f"Female · under 1 year · breed-filtered · {len(results)} rescues · "
-        f"{new_count} new / {discarded_count} discounted"
+    summary_base = (
+        f"Female · under 1 year · breed-filtered · {len(results)} rescues"
     )
+    summary = f"{summary_base} · {new_count} new / {discarded_count} discounted"
 
     return (
         "<!DOCTYPE html>\n"
@@ -161,10 +239,13 @@ def format_html(
         '<div style="max-width:520px;margin:0 auto">\n'
         f'<h1 style="font-size:24px;font-weight:700;color:#222;'
         f'margin:0 0 4px 0">🐾 {total_label} available</h1>\n'
-        f'<p style="font-size:13px;color:#888;margin:0 0 24px 0">'
+        f'<p id="summary" data-base="{_esc(summary_base)}" '
+        f'style="font-size:13px;color:#888;margin:0 0 24px 0">'
         f'{_esc(summary)}</p>\n'
         + "\n".join(sections)
-        + "\n</div>\n</body>\n</html>"
+        + "\n</div>\n"
+        + _HTML_JS
+        + "\n</body>\n</html>"
     )
 
 

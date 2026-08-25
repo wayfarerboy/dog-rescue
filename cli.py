@@ -149,9 +149,13 @@ def _help() -> None:
         "  -------------------\n"
         "  1. Daily Check -> fetch every site, filter by distance, email new dogs.\n"
         "  2. List Dogs    -> see what is currently available (table or HTML page).\n"
-        "  3. Browse & Mark -> step through dogs; a number copies that dog's URL\n"
-        "      to the clipboard (so you can open it in a browser, even over SSH);\n"
-        "      'd<num>' marks a dog you've decided against as discounted.\n"
+        "  3. Mark as discounted:\n"
+        "     - Browse & Mark (Manage Discounted -> 1): type a number to copy\n"
+        "       that dog's URL to the clipboard (works over SSH); 'd<num>' marks\n"
+        "       a dog as discounted.\n"
+        "     - Serve HTML (List Dogs -> 6): opens the page in a browser where\n"
+        "       each card has a Discount / Un-discount button that saves straight\n"
+        "       back to data/discounted.txt.\n"
         "     Discounted dogs show as [D] in the terminal and are dimmed /\n"
         "     struck-through on the HTML page, so new dogs stand out next run.\n"
         "\n"
@@ -188,7 +192,8 @@ def _list_dogs_menu():
             ("3", "Live fetch → HTML file (dogs.html)"),
             ("4", "Cached data → HTML file (dogs.html)"),
             ("5", "Open dogs.html in browser"),
-            ("6", "List only unseen (cached, hide discounted)"),
+            ("6", "Serve HTML in browser (live discount toggles)"),
+            ("7", "List only unseen (cached, hide discounted)"),
             ("0", "Back to main menu"),
         ])
         if choice is None or choice == "0":
@@ -217,9 +222,26 @@ def _list_dogs_menu():
                 print("  dogs.html not found. Generate it first (options 3 or 4).")
                 _press_any_key()
         elif choice == "6":
+            _serve_html()
+        elif choice == "7":
             _header("List Only Unseen (cached, hide discounted)")
             _run("list_dogs.py", "--cached", "--hide-discarded")
             _press_any_key()
+
+
+def _serve_html():
+    """Serve dogs.html with live Discount/Un-discount toggles."""
+    _header("Serve HTML (Live Discount Toggles)")
+    print("  Starting a local server and opening your browser.")
+    print("  Click Discount / Un-discount on a card to update data/discounted.txt.")
+    print("  Other devices on your network can open the LAN URL shown.")
+    print("  Press Ctrl-C here to stop and return to the menu.\n")
+    python = str(VENV_PYTHON) if VENV_PYTHON.exists() else sys.executable
+    try:
+        subprocess.run([python, str(SCRIPT_DIR / "serve.py")])
+    except KeyboardInterrupt:
+        print("\n  Stopped.")
+    _press_any_key()
 
 
 # ── manage discounted dogs ────────────────────────────────────────────

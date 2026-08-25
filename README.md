@@ -103,10 +103,14 @@ uv run python list_dogs.py --un-discard <url>   # un-mark
 uv run python list_dogs.py --hide-discarded     # only show unseen dogs
 ```
 
-Or use the interactive CLI (`uv run python cli.py` → **List Dogs** →
-**Browse & mark dogs**): type a dog's number to copy its URL to the clipboard
-(`pbcopy`/`xclip`/`clip`) so you can open it in a browser over SSH, and type
-`d<num>` to toggle it as discounted.
+Or use the interactive CLI (`uv run python cli.py`):
+- **Manage Discounted → Browse & mark** — type a dog's number to copy its URL
+  to the clipboard (`pbcopy`/`xclip`/`clip`) so you can open it in a browser
+  over SSH, and type `d<num>` to toggle it as discounted.
+- **List Dogs → Serve HTML in browser** — opens the page in a browser where
+  each card has a **Discount / Un-discount** button that saves straight back
+  to `data/discounted.txt`, so marking from the page updates the system.
+  (`uv run python serve.py` works too; press Ctrl-C to stop.)
 
 ### Cache management
 
@@ -132,6 +136,7 @@ uv run python repair_cache.py --dry-run    # preview repairs without fetching
 ├── dog_rescue.py         # Main orchestrator (fetch → filter → email)
 ├── list_dogs.py          # Terminal listing + HTML output
 ├── discount.py           # Discounted-dog tracking (DiscountList)
+├── serve.py              # Local HTML server with live discount toggles
 ├── populate_caches.py    # Build baseline cache files for all sites
 ├── repair_cache.py       # Repair cached entries via profile scraping
 ├── distance_lookup.py    # Google Maps Distance Matrix API lookup + cache

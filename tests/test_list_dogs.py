@@ -124,6 +124,24 @@ class TestDiscountedMarker:
         html = list_dogs.format_html([("Test", dogs)], discounted=discounted)
         assert "1 new / 1 discounted" in html
 
+    def test_html_has_toggle_button_per_card(self, tmp_path: Path):
+        discounted = DiscountedList(str(tmp_path))
+        discounted.add("https://example.org/bella")
+        dogs = [make_dog(), make_dog(name="Luna", url="https://example.org/luna")]
+        html = list_dogs.format_html([("Test", dogs)], discounted=discounted)
+        assert 'data-dog-url="https://example.org/bella"' in html
+        assert 'data-dog-url="https://example.org/luna"' in html
+        # two actual buttons (the JS also references the class via querySelector)
+        assert html.count('class="disc-btn"') == 2
+        # discounted dog's button reads "Un-discount"
+        assert "Un-discount" in html
+
+    def test_html_embeds_live_script(self, tmp_path: Path):
+        dogs = [make_dog()]
+        html = list_dogs.format_html([("Test", dogs)], discounted=DiscountedList(str(tmp_path)))
+        assert "<script>" in html
+        assert "/api/discounted/toggle" in html
+
 
 class TestListCached:
     def test_reads_cache_files(self, tmp_path: Path):
@@ -227,8 +245,9 @@ class TestFormatHtml:
     def test_escapes_html_in_dog_data(self):
         dogs = [make_dog(name="<script>alert(1)</script>")]
         html = list_dogs.format_html([("Test", dogs)])
-        assert "<script>" not in html
-        assert "&lt;script&gt;" in html
+        # The injected payload must be escaped, never emitted raw.
+        assert "<script>alert(1)</script>" not in html
+        assert "&lt;script&gt;alert(1)&lt;/script&gt;" in html
 
     def test_empty_results_returns_empty_page(self):
         html = list_dogs.format_html([])
@@ -237,9 +256,10 @@ class TestFormatHtml:
     def test_no_external_resources(self):
         dogs = [make_dog()]
         html = list_dogs.format_html([("Test", dogs)])
-        # Should not reference external CSS, JS, or font CDNs
-        # (profile links use https which is expected)
-        for external in [".css", ".js", "@import", "googleapis", "cloudflare"]:
+        # Should not load external CSS/JS/font files or CDN hosts.
+        # (Styles and the discount-toggle script are inline; profile links use
+        # https which is expected.)
+        for external in ["<script src=", "<link ", "@import url(", "googleapis", "cloudflare"]:
             assert external not in html, f"Found external resource: {external}"
 
 
