@@ -24,8 +24,6 @@ from sites.dogs_trust import DogsTrustChecker
 from sites.east_midlands import EastMidlandsDogRescueChecker
 from sites.forest_dog_rescue import ForestDogRescueChecker
 from sites.gsdr import GsdrChecker
-from sites.happy_staffie import HappyStaffieChecker
-from sites.small_dog_rescue import SmallDogRescueChecker
 from sites.jerry_green import JerryGreenChecker
 from sites.many_tears import ManyTearsChecker
 from sites.paws2rescue import Paws2RescueChecker
@@ -34,6 +32,7 @@ from sites.raystede import RaystedeChecker
 from sites.rspca_brighton import RSPCABrightonChecker
 from sites.rspca_leeds import RSPCALeedsChecker
 from sites.scsr import SCSRChecker
+from sites.small_dog_rescue import SmallDogRescueChecker
 from sites.south_east_dog_rescue import SouthEastDogRescueChecker
 from sites.spaniel_aid import SpanielAidChecker
 from sites.starfish import StarfishChecker
@@ -93,7 +92,7 @@ def get_checkers(data_dir: str) -> list[SiteChecker]:
         WildAcreChecker(data_dir),
         WythallChecker(data_dir),
         GsdrChecker(data_dir),
-        HappyStaffieChecker(data_dir),
+        # HappyStaffieChecker(data_dir),  # User isn't interested in Happy Staffie Rescue
         SmallDogRescueChecker(data_dir),
     ]
 
