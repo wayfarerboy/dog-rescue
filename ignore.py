@@ -1,13 +1,13 @@
-"""Discounted-dog list — tracking dogs the user has looked at and dismissed.
+"""Ignored-dog list — tracking dogs the user has looked at and dismissed.
 
 A dog is identified by its profile URL (the unique key, since names collide).
 
 Usage:
-    from discount import DiscountedList
+    from ignore import IgnoredList
 
-    dl = DiscountedList("data")
+    dl = IgnoredList("data")
     if url in dl:
-        # already looked at and discounted
+        # already looked at and ignored
     dl.add(url)
     dl.remove(url)
 """
@@ -17,17 +17,22 @@ from __future__ import annotations
 from pathlib import Path
 
 
-class DiscountedList:
-    """A set of dog URLs the user has looked at and discounted.
+class IgnoredList:
+    """A set of dog URLs the user has looked at and ignored.
 
-    File path: <data_dir>/discounted.txt — one dog URL per line.
+    File path: <data_dir>/ignored.txt — one dog URL per line.
     """
 
-    _FILE_NAME = "discounted.txt"
+    _FILE_NAME = "ignored.txt"
+    _LEGACY_FILE_NAME = "discounted.txt"
 
     def __init__(self, data_dir: str) -> None:
         self._data_dir = Path(data_dir)
         self._data_path = self._data_dir / self._FILE_NAME
+        legacy = self._data_dir / self._LEGACY_FILE_NAME
+        if not self._data_path.exists() and legacy.exists():
+            # Migrate the pre-rename file (discounted.txt) to the new name.
+            legacy.rename(self._data_path)
         self._urls: list[str] = []
         if self._data_path.exists():
             self._urls = [
@@ -37,11 +42,11 @@ class DiscountedList:
             ]
 
     def urls(self) -> list[str]:
-        """Return all discounted dog URLs in insertion order."""
+        """Return all ignored dog URLs in insertion order."""
         return list(self._urls)
 
     def add(self, url: str) -> None:
-        """Add a dog URL to the discounted list. Idempotent."""
+        """Add a dog URL to the ignored list. Idempotent."""
         url = url.strip()
         if url and url not in self._urls:
             self._urls.append(url)
@@ -49,7 +54,7 @@ class DiscountedList:
             self._data_path.write_text("\n".join(self._urls) + "\n")
 
     def remove(self, url: str) -> None:
-        """Remove a dog URL from the discounted list. No-op if not present."""
+        """Remove a dog URL from the ignored list. No-op if not present."""
         url = url.strip()
         if url in self._urls:
             self._urls = [u for u in self._urls if u != url]
@@ -60,7 +65,7 @@ class DiscountedList:
                 self._data_path.write_text("")
 
     def toggle(self, url: str) -> bool:
-        """Flip the discounted state for a URL. Returns True if now discounted."""
+        """Flip the ignored state for a URL. Returns True if now ignored."""
         url = url.strip()
         if url in self._urls:
             self.remove(url)

@@ -24,7 +24,7 @@ CACHE_SUFFIX = ".txt"
 TOO_FAR_PATH = DATA_DIR / "too-far.txt"
 DISTANCES_PATH = DATA_DIR / "distances.json"
 EXCLUDED_BREEDS_PATH = DATA_DIR / "excluded-breeds.txt"
-DISCOUNTED_PATH = DATA_DIR / "discounted.txt"
+IGNORED_PATH = DATA_DIR / "ignored.txt"
 
 # ── helpers ────────────────────────────────────────────────────────────
 
@@ -149,14 +149,14 @@ def _help() -> None:
         "  -------------------\n"
         "  1. Daily Check -> fetch every site, filter by distance, email new dogs.\n"
         "  2. List Dogs    -> see what is currently available (table or HTML page).\n"
-        "  3. Mark as discounted:\n"
-        "     - Browse & Mark (Manage Discounted -> 1): type a number to copy\n"
+        "  3. Mark as ignored:\n"
+        "     - Browse & Mark (Manage Ignored -> 1): type a number to copy\n"
         "       that dog's URL to the clipboard (works over SSH); 'd<num>' marks\n"
-        "       a dog as discounted.\n"
+        "       a dog as ignored.\n"
         "     - Serve HTML (List Dogs -> 6): opens the page in a browser where\n"
-        "       each card has a Discount / Un-discount button that saves straight\n"
-        "       back to data/discounted.txt.\n"
-        "     Discounted dogs show as [D] in the terminal and are dimmed /\n"
+        "       each card has a Ignore / Un-ignore button that saves straight\n"
+        "       back to data/ignored.txt.\n"
+        "     Ignored dogs show as [I] in the terminal and are dimmed /\n"
         "     struck-through on the HTML page, so new dogs stand out next run.\n"
         "\n"
         "  Menus\n"
@@ -164,7 +164,7 @@ def _help() -> None:
         "  1 Help / How to use ...... this screen\n"
         "  2 Daily Check + Email ...... fetch all -> filter -> email new dogs\n"
         "  3 List Dogs ............... terminal table / HTML page of available dogs\n"
-        "  4 Manage Discounted ....... mark/unmark/view dogs you've looked at\n"
+        "  4 Manage Ignored ....... mark/unmark/view dogs you've looked at\n"
         "  5 Cache Management ........ rebuild / repair / browse per-site cache files\n"
         "  6 Distance & Location ..... driving distances, too-far list, breed exclusions\n"
         "  7 Discover New Rescues .... search for new rescue sites (Places API)\n"
@@ -192,8 +192,8 @@ def _list_dogs_menu():
             ("3", "Live fetch → HTML file (dogs.html)"),
             ("4", "Cached data → HTML file (dogs.html)"),
             ("5", "Open dogs.html in browser"),
-            ("6", "Serve HTML in browser (live discount toggles)"),
-            ("7", "List only unseen (cached, hide discounted)"),
+            ("6", "Serve HTML in browser (live ignore toggles)"),
+            ("7", "List only unseen (cached, hide ignored)"),
             ("0", "Back to main menu"),
         ])
         if choice is None or choice == "0":
@@ -224,16 +224,16 @@ def _list_dogs_menu():
         elif choice == "6":
             _serve_html()
         elif choice == "7":
-            _header("List Only Unseen (cached, hide discounted)")
-            _run("list_dogs.py", "--cached", "--hide-discarded")
+            _header("List Only Unseen (cached, hide ignored)")
+            _run("list_dogs.py", "--cached", "--hide-ignored")
             _press_any_key()
 
 
 def _serve_html():
-    """Serve dogs.html with live Discount/Un-discount toggles."""
-    _header("Serve HTML (Live Discount Toggles)")
+    """Serve dogs.html with live Ignore/Un-ignore toggles."""
+    _header("Serve HTML (Live Ignore Toggles)")
     print("  Starting a local server and opening your browser.")
-    print("  Click Discount / Un-discount on a card to update data/discounted.txt.")
+    print("  Click Ignore / Un-ignore on a card to update data/ignored.txt.")
     print("  Other devices on your network can open the LAN URL shown.")
     print("  Press Ctrl-C here to stop and return to the menu.\n")
     python = str(VENV_PYTHON) if VENV_PYTHON.exists() else sys.executable
@@ -244,13 +244,13 @@ def _serve_html():
     _press_any_key()
 
 
-# ── manage discounted dogs ────────────────────────────────────────────
+# ── manage ignored dogs ────────────────────────────────────────────
 
-def _discounted_menu():
+def _ignored_menu():
     while True:
-        choice = _menu("Manage Discounted Dogs", [
+        choice = _menu("Manage Ignored Dogs", [
             ("1", "Browse & mark dogs (interactive, copy URL to clipboard)"),
-            ("2", "View / manage discounted list (add / remove by number)"),
+            ("2", "View / manage ignored list (add / remove by number)"),
             ("0", "Back to main menu"),
         ])
         if choice is None or choice == "0":
@@ -258,24 +258,24 @@ def _discounted_menu():
         if choice == "1":
             _browse_mark_dogs()
         elif choice == "2":
-            _view_discounted()
+            _view_ignored()
 
 
 # ── browse & mark dogs ────────────────────────────────────────────────
 
 def _browse_mark_dogs():
-    """Interactive browse: copy URLs to clipboard and mark dogs as discounted.
+    """Interactive browse: copy URLs to clipboard and mark dogs as ignored.
 
     - Enter a number  -> copy that dog's URL to the system clipboard.
-    - d<number>       -> toggle discounted state for that dog.
+    - d<number>       -> toggle ignored state for that dog.
     - r               -> re-fetch.
     - 0 / q           -> back.
     """
-    from discount import DiscountedList
+    from ignore import IgnoredList
     from list_dogs import list_cached, list_live
     from sites.base import Dog
 
-    discounted = DiscountedList(str(DATA_DIR))
+    ignored = IgnoredList(str(DATA_DIR))
 
     source = input("  Live fetch or cached? [l/c] (l): ").strip().lower()
     cached = source == "c"
@@ -296,14 +296,14 @@ def _browse_mark_dogs():
             return
 
         for i, (_site_name, d) in enumerate(dogs, 1):
-            mark = "[D]" if d.url in discounted else "   "
+            mark = "[I]" if d.url in ignored else "   "
             print(f"  {i:>3}. {mark} {d.name}")
             print(f"       {d.breed or '?'} · {d.gender or '?'} · {d.age or '?'}")
             print(f"       {d.url}")
 
         print()
         print("  Enter a number to copy its URL to clipboard.")
-        print("  d<num> = toggle discounted · r = refresh · 0/q = back")
+        print("  d<num> = toggle ignored · r = refresh · 0/q = back")
         print()
         prompt = "  > "
         cmd = input(prompt).strip().lower()
@@ -319,8 +319,8 @@ def _browse_mark_dogs():
                 idx = int(num) - 1
                 if 0 <= idx < len(dogs):
                     url = dogs[idx][1].url
-                    now_discounted = discounted.toggle(url)
-                    state = "discounted" if now_discounted else "un-discounted"
+                    now_ignored = ignored.toggle(url)
+                    state = "ignored" if now_ignored else "un-ignored"
                     print(f"  → Marked {dogs[idx][1].name} as {state}.")
                     _press_any_key()
                     continue
@@ -340,28 +340,28 @@ def _browse_mark_dogs():
         _press_any_key()
 
 
-def _view_discounted():
-    """View and manage the discounted-dogs list."""
-    from discount import DiscountedList
+def _view_ignored():
+    """View and manage the ignored-dogs list."""
+    from ignore import IgnoredList
 
-    discounted = DiscountedList(str(DATA_DIR))
-    urls = discounted.urls()
+    ignored = IgnoredList(str(DATA_DIR))
+    urls = ignored.urls()
 
-    _header("Discounted Dogs")
+    _header("Ignored Dogs")
     if not urls:
-        print("  No dogs marked as discounted yet.")
+        print("  No dogs marked as ignored yet.")
     else:
         for i, url in enumerate(urls, 1):
             print(f"  {i:>3}. {url}")
-        print(f"\n  {len(urls)} dog(s) discounted")
+        print(f"\n  {len(urls)} dog(s) ignored")
 
     print()
     action = input("  [a]dd URL, [r]emove by number, or [Enter] back: ").strip().lower()
     if action == "a":
-        url = input("  Dog URL to discount: ").strip()
+        url = input("  Dog URL to ignore: ").strip()
         if url:
-            discounted.add(url)
-            print(f"  Discounted: {url}")
+            ignored.add(url)
+            print(f"  Ignored: {url}")
             _press_any_key()
     elif action == "r":
         num = input("  Number to remove: ").strip()
@@ -369,7 +369,7 @@ def _view_discounted():
             idx = int(num) - 1
             if 0 <= idx < len(urls):
                 removed = urls[idx]
-                discounted.remove(removed)
+                ignored.remove(removed)
                 print(f"  Removed: {removed}")
                 _press_any_key()
             else:
@@ -748,7 +748,7 @@ def main() -> None:
             ("1", "Help / How to use"),
             ("2", "Daily Check + Email  (fetch all → filter → email)"),
             ("3", "List Dogs  (terminal table / HTML output)"),
-            ("4", "Manage Discounted Dogs  (mark / unmark / view)"),
+            ("4", "Manage Ignored Dogs  (mark / unmark / view)"),
             ("5", "Cache Management  (populate / repair / browse)"),
             ("6", "Distance & Location  (distances, too-far list)"),
             ("7", "Discover New Rescues  (Places API search)"),
@@ -765,7 +765,7 @@ def main() -> None:
         elif choice == "3":
             _list_dogs_menu()
         elif choice == "4":
-            _discounted_menu()
+            _ignored_menu()
         elif choice == "5":
             _cache_menu()
         elif choice == "6":

@@ -12,8 +12,8 @@
 - **Reserved filter** — A checker must exclude dogs that are reserved / home-found / applications-closed from its `parse()` output. This ensures they drop from cache so a status flip is detected.
 - **Center distance** — Google Maps driving distance from home (224 Bath Road, Worcester WR5 3ER) to a rescue center. Cached in a lookup table so the API is only called once per center.
 - **Too-far list** — Centers beyond the maximum acceptable driving distance. Kept so future rescue research doesn't re-evaluate them.
-- **Discounted dog** — A dog the user has looked at and decided not to pursue. Tracked by profile URL in `data/discounted.txt` (`discount.py::DiscountedList`). Listed dogs that are discounted are tagged `[D]` (terminal) / dimmed with a badge (HTML) so new dogs stand out.
+- **Ignored dog** — A dog the user has looked at and decided not to pursue. Tracked by profile URL in `data/ignored.txt` (`ignore.py::IgnoredList`). Listed dogs that are ignored are tagged `[I]` (terminal) / dimmed with a badge (HTML) so new dogs stand out.
 
 ## Decisions
 
-See `docs/adr/` for architectural decisions (e.g. **ADR-0001** discounted-dog tracking).
+See `docs/adr/` for architectural decisions (e.g. **ADR-0001** ignored-dog tracking).

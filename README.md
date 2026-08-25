@@ -11,7 +11,7 @@ and sends email notifications via msmtp.
 ```
 
 That single command launches the interactive menu — the one point of entry for
-everything (list dogs, browse & mark discounted dogs, daily email check, cache
+everything (list dogs, browse & mark ignored dogs, daily email check, cache
 management, distances, tests). Full walkthrough in [`MANUAL.md`](MANUAL.md);
 on-screen help is also one keypress away inside the menu (option **1**).
 
@@ -59,7 +59,7 @@ brew install msmtp      # for sending email
 ```
 
 Interactive menu covering: daily check + email, listing dogs, browsing & marking
-dogs as discounted, cache management, distances, discovery, and tests.
+dogs as ignored, cache management, distances, discovery, and tests.
 
 ### Daily check + email
 
@@ -78,7 +78,7 @@ uv run python list_dogs.py --cached    # read from cache files
 ```
 
 Prints a pipe-delimited table of all available dogs. Dogs you've marked as
-discounted are tagged `[D]`.
+ignored are tagged `[I]`.
 
 ### HTML web page
 
@@ -89,27 +89,27 @@ uv run python list_dogs.py --html --cached    # cache → dogs.html
 
 Writes a self-contained `dogs.html` with styled cards, grouped by rescue,
 with photo thumbnails and profile links. No external CSS/JS/fonts needed.
-Discounted dogs are dimmed and struck through with a badge; the header shows
-`N new / M discounted`.
+Ignored dogs are dimmed and struck through with a badge; the header shows
+`N new / M ignored`.
 
-### Discounted-dog tracking
+### Ignored-dog tracking
 
 Mark a dog as "looked at and dismissed" so new dogs stand out next time.
-Discounted status is stored locally in `data/discounted.txt` (keyed by URL).
+Ignored status is stored locally in `data/ignored.txt` (keyed by URL).
 
 ```bash
-uv run python list_dogs.py --discard <url>      # mark a dog as discounted
-uv run python list_dogs.py --un-discard <url>   # un-mark
-uv run python list_dogs.py --hide-discarded     # only show unseen dogs
+uv run python list_dogs.py --ignore <url>      # mark a dog as ignored
+uv run python list_dogs.py --un-ignore <url>   # un-mark
+uv run python list_dogs.py --hide-ignored     # only show unseen dogs
 ```
 
 Or use the interactive CLI (`uv run python cli.py`):
-- **Manage Discounted → Browse & mark** — type a dog's number to copy its URL
+- **Manage Ignored → Browse & mark** — type a dog's number to copy its URL
   to the clipboard (`pbcopy`/`xclip`/`clip`) so you can open it in a browser
-  over SSH, and type `d<num>` to toggle it as discounted.
+  over SSH, and type `d<num>` to toggle it as ignored.
 - **List Dogs → Serve HTML in browser** — opens the page in a browser where
-  each card has a **Discount / Un-discount** button that saves straight back
-  to `data/discounted.txt`, so marking from the page updates the system.
+  each card has a **Ignore / Un-ignore** button that saves straight back
+  to `data/ignored.txt`, so marking from the page updates the system.
   (`uv run python serve.py` works too; press Ctrl-C to stop.)
 
 ### Cache management
@@ -135,8 +135,8 @@ uv run python repair_cache.py --dry-run    # preview repairs without fetching
 ├── MANUAL.md             # User manual
 ├── dog_rescue.py         # Main orchestrator (fetch → filter → email)
 ├── list_dogs.py          # Terminal listing + HTML output
-├── discount.py           # Discounted-dog tracking (DiscountList)
-├── serve.py              # Local HTML server with live discount toggles
+├── ignore.py           # Ignored-dog tracking (IgnoreList)
+├── serve.py              # Local HTML server with live ignore toggles
 ├── populate_caches.py    # Build baseline cache files for all sites
 ├── repair_cache.py       # Repair cached entries via profile scraping
 ├── distance_lookup.py    # Google Maps Distance Matrix API lookup + cache
@@ -166,5 +166,5 @@ uv run python repair_cache.py --dry-run    # preview repairs without fetching
     ├── *.txt             # Per-site cache files (gitignored)
     ├── distances.json    # Center distance cache (gitignored)
     ├── too-far.txt       # Excluded rescues (gitignored)
-    └── discounted.txt    # Discounted dog URLs (gitignored)
+    └── ignored.txt    # Ignored dog URLs (gitignored)
 ```

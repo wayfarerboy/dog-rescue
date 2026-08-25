@@ -5,9 +5,9 @@ Usage:
   python3 list_dogs.py              # Live fetch all sites
   python3 list_dogs.py --cached     # Read from data/*.txt cache files
   python3 list_dogs.py --html       # Live fetch -> dogs.html
-  python3 list_dogs.py --discard <url>    # Mark a dog as discounted
-  python3 list_dogs.py --un-discard <url> # Un-mark a dog
-  python3 list_dogs.py --hide-discarded   # Only show unseen dogs
+  python3 list_dogs.py --ignore <url>    # Mark a dog as ignored
+  python3 list_dogs.py --un-ignore <url> # Un-mark a dog
+  python3 list_dogs.py --hide-ignored   # Only show unseen dogs
 """
 
 from __future__ import annotations
@@ -16,8 +16,8 @@ import sys
 from pathlib import Path
 
 from breed_exclusion import BreedExclusionList, filter_dogs_by_breed
-from discount import DiscountedList
 from filters import filter_dogs_by_age, filter_dogs_by_gender
+from ignore import IgnoredList
 from sites.base import Dog, _esc, _photo_tag
 from sites.registry import get_active_checkers
 
@@ -25,73 +25,100 @@ SCRIPT_DIR = Path(__file__).resolve().parent
 DATA_DIR = SCRIPT_DIR / "data"
 
 # Inline JS: when the HTML is served over HTTP (see serve.py) it fetches the
-# live discounted set and wires up the per-card Discount/Un-discount buttons so
-# a click persists to data/discounted.txt. Opened as a plain file (file://) it
+# live ignored set and wires up the per-card Ignore/Un-ignore buttons so
+# a click persists to data/ignored.txt. Opened as a plain file (file://) it
 # degrades to the static markers baked in at generation time.
 _HTML_JS = """<script>
 (function () {
+  var KEY = 'dogRescue.hideIgnored';
   var cards = function () {
     return Array.prototype.slice.call(document.querySelectorAll('[data-dog-url]'));
   };
-  function applyState(card, discounted) {
-    card.style.opacity = discounted ? '0.45' : '1';
+  function isIgnored(set, c) { return set.has(c.getAttribute('data-dog-url')); }
+  function applyState(card, ignored) {
+    card.style.opacity = ignored ? '0.45' : '1';
     var nameEl = card.querySelector('.dog-name');
-    if (nameEl) nameEl.style.textDecoration = discounted ? 'line-through' : 'none';
+    if (nameEl) nameEl.style.textDecoration = ignored ? 'line-through' : 'none';
     var badge = card.querySelector('.dog-badge');
-    if (discounted && !badge) {
+    if (ignored && !badge) {
       badge = document.createElement('span');
       badge.className = 'dog-badge';
-      badge.textContent = 'discounted';
+      badge.textContent = 'ignored';
       badge.style.cssText = 'font-size:11px;font-weight:700;color:#fff;' +
         'background:#9a9a9a;border-radius:4px;padding:2px 8px;margin-left:8px;' +
         'vertical-align:middle';
       var n = card.querySelector('.dog-name');
       if (n) n.appendChild(badge);
-    } else if (!discounted && badge) {
+    } else if (!ignored && badge) {
       badge.parentNode.removeChild(badge);
     }
     var btn = card.querySelector('.disc-btn');
     if (btn) {
-      btn.textContent = discounted ? 'Un-discount' : 'Discount';
-      btn.style.background = discounted ? '#9a9a9a' : '#e8e8e8';
-      btn.style.color = discounted ? '#fff' : '#555';
+      btn.textContent = ignored ? 'Un-ignore' : 'Ignore';
+      btn.style.background = ignored ? '#9a9a9a' : '#e8e8e8';
+      btn.style.color = ignored ? '#fff' : '#555';
     }
   }
+  function hideIgnored() {
+    var cb = document.getElementById('hideIgnored');
+    return !!cb && cb.checked;
+  }
+  function applyVisibility(set) {
+    var hide = hideIgnored();
+    cards().forEach(function (c) {
+      c.style.display = (hide && isIgnored(set, c)) ? 'none' : 'flex';
+    });
+  }
   function renderCounts(set) {
-    var total = cards().length;
-    var discarded = cards().filter(function (c) {
-      return set.has(c.getAttribute('data-dog-url'));
-    }).length;
+    var vis = cards().filter(function (c) { return c.style.display !== 'none'; });
+    var total = vis.length;
+    var ignored = vis.filter(function (c) { return isIgnored(set, c); }).length;
     var p = document.getElementById('summary');
-    if (p) p.textContent = p.getAttribute('data-base') + ' \u00b7 ' +
-      (total - discarded) + ' new / ' + discarded + ' discounted';
+    if (!p) return;
+    var base = p.getAttribute('data-base');
+    if (hideIgnored()) {
+      p.textContent = base + ' \u00b7 ' + total + ' available (ignored hidden)';
+    } else {
+      p.textContent = base + ' \u00b7 ' + (total - ignored) + ' new / ' + ignored + ' ignored';
+    }
+  }
+  function refresh(set) {
+    cards().forEach(function (c) { applyState(c, isIgnored(set, c)); });
+    applyVisibility(set);
+    renderCounts(set);
   }
   function loadSet() {
-    return fetch('/api/discounted').then(function (r) { return r.json(); })
+    return fetch('/api/ignored').then(function (r) { return r.json(); })
       .then(function (d) { return new Set((d.urls || [])); });
   }
   function toggle(url) {
-    fetch('/api/discounted/toggle?url=' + encodeURIComponent(url), { method: 'POST' })
+    fetch('/api/ignored/toggle?url=' + encodeURIComponent(url), { method: 'POST' })
       .then(function () { return loadSet(); })
-      .then(function (set) {
-        cards().forEach(function (c) { applyState(c, set.has(c.getAttribute('data-dog-url'))); });
-        renderCounts(set);
-      });
+      .then(function (set) { refresh(set); });
   }
   loadSet().then(function (set) {
+    refresh(set);
     cards().forEach(function (c) {
       var url = c.getAttribute('data-dog-url');
-      applyState(c, set.has(url));
       var btn = c.querySelector('.disc-btn');
       if (btn) btn.onclick = function () { toggle(url); };
     });
-    renderCounts(set);
+    var cb = document.getElementById('hideIgnored');
+    if (cb) {
+      cb.checked = localStorage.getItem(KEY) === '1';
+      cb.onchange = function () {
+        localStorage.setItem(KEY, cb.checked ? '1' : '0');
+        refresh(set);
+      };
+    }
   }).catch(function () {
     // Not served over HTTP (opened as a file) — keep static markers, disable toggles.
     cards().forEach(function (c) {
       var btn = c.querySelector('.disc-btn');
-      if (btn) { btn.disabled = true; btn.textContent = 'discount (use ./dogs)'; }
+      if (btn) { btn.disabled = true; btn.textContent = 'ignore (use ./dogs)'; }
     });
+    var cb = document.getElementById('hideIgnored');
+    if (cb) cb.disabled = true;
   });
 })();
 </script>"""
@@ -117,11 +144,11 @@ def dog_from_line(line: str) -> Dog:
 
 def format_html(
     results: list[tuple[str, list[Dog]]],
-    discounted: DiscountedList | None = None,
+    ignored: IgnoredList | None = None,
 ) -> str:
     """Format dogs as a self-contained HTML document with card layout.
 
-    Discounted dogs are dimmed, struck through, and labelled.
+    Ignored dogs are dimmed, struck through, and labelled.
     """
     if not results:
         return (
@@ -137,7 +164,7 @@ def format_html(
     for site_name, dogs in results:
         cards: list[str] = []
         for d in dogs:
-            is_discarded = bool(discounted and d.url in discounted)
+            is_ignored = bool(ignored and d.url in ignored)
             name = _esc(d.name)
             age = _esc(d.age)
             gender = _esc(d.gender)
@@ -150,7 +177,7 @@ def format_html(
                 'background:#fff;border:1px solid #e0e0e0;border-radius:10px;'
                 'overflow:hidden;display:flex;margin-bottom:14px;'
                 'transition:box-shadow .15s;opacity:0.45'
-                if is_discarded
+                if is_ignored
                 else 'background:#fff;border:1px solid #e0e0e0;'
                 'border-radius:10px;overflow:hidden;display:flex;'
                 'margin-bottom:14px;transition:box-shadow .15s'
@@ -158,18 +185,18 @@ def format_html(
             name_style = (
                 'font-size:16px;font-weight:700;color:#222;'
                 'margin-bottom:2px;text-decoration:line-through'
-                if is_discarded
+                if is_ignored
                 else 'font-size:16px;font-weight:700;color:#222;margin-bottom:2px'
             )
             badge = (
                 '<span class="dog-badge" style="font-size:11px;font-weight:700;'
                 'color:#fff;background:#9a9a9a;border-radius:4px;padding:2px 8px;'
-                'margin-left:8px;vertical-align:middle">discounted</span>'
-                if is_discarded
+                'margin-left:8px;vertical-align:middle">ignored</span>'
+                if is_ignored
                 else ''
             )
             escaped_url = _esc(d.url)
-            btn_label = "Un-discount" if is_discarded else "Discount"
+            btn_label = "Un-ignore" if is_ignored else "Ignore"
 
             cards.append(
                 f'<div data-dog-url="{escaped_url}" style="{card_style}" '
@@ -214,16 +241,16 @@ def format_html(
 
     total = sum(len(dogs) for _, dogs in results)
     total_label = "1 dog" if total == 1 else f"{total} dogs"
-    discarded_count = 0
-    if discounted:
-        discarded_count = sum(
-            1 for _, dogs in results for d in dogs if d.url in discounted
+    ignored_count = 0
+    if ignored:
+        ignored_count = sum(
+            1 for _, dogs in results for d in dogs if d.url in ignored
         )
-    new_count = total - discarded_count
+    new_count = total - ignored_count
     summary_base = (
         f"Female · under 1 year · breed-filtered · {len(results)} rescues"
     )
-    summary = f"{summary_base} · {new_count} new / {discarded_count} discounted"
+    summary = f"{summary_base} · {new_count} new / {ignored_count} ignored"
 
     return (
         "<!DOCTYPE html>\n"
@@ -240,8 +267,12 @@ def format_html(
         f'<h1 style="font-size:24px;font-weight:700;color:#222;'
         f'margin:0 0 4px 0">🐾 {total_label} available</h1>\n'
         f'<p id="summary" data-base="{_esc(summary_base)}" '
-        f'style="font-size:13px;color:#888;margin:0 0 24px 0">'
+        f'style="font-size:13px;color:#888;margin:0 0 8px 0">'
         f'{_esc(summary)}</p>\n'
+        f'<label style="font-size:12px;color:#666;display:block;'
+        f'margin-bottom:24px">'
+        f'<input type="checkbox" id="hideIgnored" '
+        f'style="margin-right:6px"> Hide ignored</label>\n'
         + "\n".join(sections)
         + "\n</div>\n"
         + _HTML_JS
@@ -251,11 +282,11 @@ def format_html(
 
 def format_table(
     results: list[tuple[str, list[Dog]]],
-    discounted: DiscountedList | None = None,
+    ignored: IgnoredList | None = None,
 ) -> str:
     """Format dogs as a pipe-delimited table string.
 
-    Discounted dogs are prefixed with "[D]".
+    Ignored dogs are prefixed with "[I]".
     """
     if not results:
         return "No dogs found."
@@ -267,7 +298,7 @@ def format_table(
 
     for _site_name, dogs in results:
         for d in dogs:
-            mark = "  [D]" if (discounted and d.url in discounted) else ""
+            mark = "  [I]" if (ignored and d.url in ignored) else ""
             lines.append(
                 f"{d.status} | {d.name} | {d.age} | {d.gender} | "
                 f"{d.breed} | {d.location} | {d.url}{mark}"
@@ -342,40 +373,40 @@ def main() -> None:
     args = sys.argv[1:]
     cached = "--cached" in args
     html = "--html" in args
-    hide_discarded = "--hide-discarded" in args
+    hide_ignored = "--hide-ignored" in args
 
-    discounted = DiscountedList(str(DATA_DIR))
+    ignored = IgnoredList(str(DATA_DIR))
 
     # Fast path: just mark/unmark a dog without listing.
-    if "--discard" in args:
-        idx = args.index("--discard")
+    if "--ignore" in args:
+        idx = args.index("--ignore")
         if idx + 1 < len(args):
-            discounted.add(args[idx + 1])
-            print(f"Discounted: {args[idx + 1]}")
+            ignored.add(args[idx + 1])
+            print(f"Ignored: {args[idx + 1]}")
         return
-    if "--un-discard" in args:
-        idx = args.index("--un-discard")
+    if "--un-ignore" in args:
+        idx = args.index("--un-ignore")
         if idx + 1 < len(args):
-            discounted.remove(args[idx + 1])
-            print(f"Removed from discounted: {args[idx + 1]}")
+            ignored.remove(args[idx + 1])
+            print(f"Removed from ignored: {args[idx + 1]}")
         return
 
     results = list_cached(str(DATA_DIR)) if cached else list_live(str(DATA_DIR))
 
-    if hide_discarded:
+    if hide_ignored:
         results = [
-            (site_name, [d for d in dogs if d.url not in discounted])
+            (site_name, [d for d in dogs if d.url not in ignored])
             for site_name, dogs in results
         ]
         results = [(s, ds) for s, ds in results if ds]
 
     if html:
-        output = format_html(results, discounted=discounted)
+        output = format_html(results, ignored=ignored)
         Path("dogs.html").write_text(output)
         total = sum(len(dogs) for _, dogs in results)
         print(f"Wrote {total} dogs to dogs.html")
     else:
-        print(format_table(results, discounted=discounted))
+        print(format_table(results, ignored=ignored))
 
 
 if __name__ == "__main__":

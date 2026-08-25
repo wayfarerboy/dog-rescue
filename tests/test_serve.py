@@ -1,4 +1,4 @@
-"""Tests for serve.py — local HTML server with live discount toggles."""
+"""Tests for serve.py — local HTML server with live ignore toggles."""
 
 from __future__ import annotations
 

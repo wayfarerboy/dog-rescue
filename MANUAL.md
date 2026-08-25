@@ -41,11 +41,11 @@ Dog Rescue CLI
 │    ├─ 3  Live fetch → HTML file (dogs.html)
 │    ├─ 4  Cached data → HTML file
 │    ├─ 5  Open dogs.html in browser
-│    ├─ 6  Serve HTML in browser (live discount toggles)
-│    └─ 7  List only unseen (cached, hide discounted)
-├─ 4  Manage Discounted Dogs     track dogs you've looked at and dismissed
+│    ├─ 6  Serve HTML in browser (live ignore toggles)
+│    └─ 7  List only unseen (cached, hide ignored)
+├─ 4  Manage Ignored Dogs     track dogs you've looked at and dismissed
 │    ├─ 1  Browse & mark (interactive)
-│    └─ 2  View / manage discounted list
+│    └─ 2  View / manage ignored list
 ├─ 5  Cache Management           populate / repair / browse per-site cache files
 ├─ 6  Distance & Location        distances, too-far list, breed exclusions
 ├─ 7  Discover New Rescues       search for new rescue sites (Places API)
@@ -62,20 +62,20 @@ Dog Rescue CLI
 3. **Browse & mark (4 → 1)** — step through the dogs. This is where you tell
    the tool which ones you've already decided against.
 
-## Browsing & marking dogs as "discounted"
+## Browsing & marking dogs as "ignored"
 
-There are two ways to mark a dog as discounted.
+There are two ways to mark a dog as ignored.
 
 ### From the terminal (Browse & mark)
 
-In **Manage Discounted Dogs → Browse & mark**, each dog is numbered and shown
+In **Manage Ignored Dogs → Browse & mark**, each dog is numbered and shown
 with its details and profile URL:
 
 - Type a **number** → that dog's URL is **copied to your system clipboard**
   (uses `pbcopy` on macOS, `xclip`/`xsel` on Linux, `clip` on Windows). Paste
   it into a browser to look at the dog. This works over SSH because the copy
   happens on the machine running the CLI.
-- Type **`d<number>`** (e.g. `d7`) → toggles that dog as **discounted**
+- Type **`d<number>`** (e.g. `d7`) → toggles that dog as **ignored**
   (looked at and dismissed).
 - **`r`** → re-fetch. **`0`/`q`** → back.
 
@@ -83,9 +83,9 @@ with its details and profile URL:
 
 Use **List Dogs → Serve HTML in browser**. This starts a tiny local server
 (`serve.py`) and opens the page in your browser. Every card now has a
-**Discount / Un-discount** button that saves straight back to
-`data/discounted.txt` — so clicking it in the page **updates the system**
-immediately (badge, strikethrough, and the `N new / M discounted` count all
+**Ignore / Un-ignore** button that saves straight back to
+`data/ignored.txt` — so clicking it in the page **updates the system**
+immediately (badge, strikethrough, and the `N new / M ignored` count all
 refresh in place). Press **Ctrl-C** in the terminal to stop the server.
 
 The server binds to all interfaces and prints a **LAN URL** (e.g.
@@ -93,21 +93,26 @@ The server binds to all interfaces and prints a **LAN URL** (e.g.
 browse and mark dogs too. You can also pass a specific interface/port:
 `python3 serve.py 9000` or `python3 serve.py --host 0.0.0.0 --port 8000`.
 
+Just above the dog list there is a **Hide ignored** checkbox. Tick it to
+collapse all the dogs you've already ignored so only new ones are visible, and
+untick it to show everything again. Your choice is remembered per browser
+(via `localStorage`), so it's still set the next time you open the page.
+
 > If you just open the generated `dogs.html` file directly (file://), the
 > buttons are disabled and it shows the static markers from when the file was
 > generated — use the **Serve HTML** option for live toggling.
 
-### Where discounted dogs appear
+### Where ignored dogs appear
 
-- **Terminal table:** discounted rows are tagged `[D]`.
-- **HTML page:** discounted cards are dimmed, the name is struck through, and
-  a "discounted" badge is shown. The header reports `N new / M discounted`.
-- **List only unseen (3 → 6):** hides every dog you've already discounted so
+- **Terminal table:** ignored rows are tagged `[I]`.
+- **HTML page:** ignored cards are dimmed, the name is struck through, and
+  a "ignored" badge is shown. The header reports `N new / M ignored`.
+- **List only unseen (3 → 6):** hides every dog you've already ignored so
   only new ones remain.
 
-Discounted status is stored locally in `data/discounted.txt`, keyed by the
+Ignored status is stored locally in `data/ignored.txt`, keyed by the
 dog's **profile URL** (names aren't unique). A dog is treated as new again if
-its URL changes, or if you remove it via **Manage Discounted (4 → 2)**.
+its URL changes, or if you remove it via **Manage Ignored (4 → 2)**.
 
 ## Other tools
 

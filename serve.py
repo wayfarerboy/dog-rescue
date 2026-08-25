@@ -1,12 +1,12 @@
 #!/usr/bin/env python3
-"""Serve dogs.html with live Discounted-dog toggles.
+"""Serve dogs.html with live Ignored-dog toggles.
 
 Run from the repo root (or via the CLI menu -> List Dogs -> Serve HTML):
 
     python3 serve.py [port]
 
-Starts a local HTTP server. Clicking **Discount** / **Un-discount** on a card
-persists the change to data/discounted.txt, so the page and the rest of the
+Starts a local HTTP server. Clicking **Ignore** / **Un-ignore** on a card
+persists the change to data/ignored.txt, so the page and the rest of the
 system stay in sync. Press Ctrl-C to stop.
 """
 
@@ -20,7 +20,7 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from urllib.parse import parse_qs, urlparse
 
-from discount import DiscountedList
+from ignore import IgnoredList
 
 SCRIPT_DIR = Path(__file__).resolve().parent
 DATA_DIR = SCRIPT_DIR / "data"
@@ -45,11 +45,11 @@ def _ensure_html() -> None:
     """Regenerate dogs.html from cached data so markers reflect current state."""
     import list_dogs
 
-    discounted = DiscountedList(str(DATA_DIR))
+    ignored = IgnoredList(str(DATA_DIR))
     results = list_dogs.list_cached(str(DATA_DIR))
-    HTML_PATH.write_text(list_dogs.format_html(results, discounted=discounted))
+    HTML_PATH.write_text(list_dogs.format_html(results, ignored=ignored))
     total = sum(len(dogs) for _, dogs in results)
-    print(f"Regenerated {HTML_PATH.name} ({total} dogs, {len(discounted)} discounted)")
+    print(f"Regenerated {HTML_PATH.name} ({total} dogs, {len(ignored)} ignored)")
 
 
 class Handler(BaseHTTPRequestHandler):
@@ -73,8 +73,8 @@ class Handler(BaseHTTPRequestHandler):
         path = urlparse(self.path).path
         if path in ("/", "/index.html", "/dogs.html"):
             self._serve_html()
-        elif path == "/api/discounted":
-            dl = DiscountedList(str(DATA_DIR))
+        elif path == "/api/ignored":
+            dl = IgnoredList(str(DATA_DIR))
             self._send_json({"urls": dl.urls()})
         elif path == "/favicon.ico":
             self.send_response(204)
@@ -85,11 +85,11 @@ class Handler(BaseHTTPRequestHandler):
 
     def do_POST(self) -> None:
         parsed = urlparse(self.path)
-        if parsed.path == "/api/discounted/toggle":
+        if parsed.path == "/api/ignored/toggle":
             url = (parse_qs(parsed.query).get("url") or [""])[0]
-            dl = DiscountedList(str(DATA_DIR))
+            dl = IgnoredList(str(DATA_DIR))
             now = dl.toggle(url)
-            self._send_json({"url": url, "discounted": now})
+            self._send_json({"url": url, "ignored": now})
         else:
             self.send_response(404)
             self.end_headers()
@@ -119,7 +119,7 @@ def main() -> None:
     print(f"  This machine : http://127.0.0.1:{actual_port}/")
     if host in ("0.0.0.0", ""):
         print(f"  LAN (others) : http://{_lan_ip()}:{actual_port}/")
-    print("  Discounted toggles update data/discounted.txt.")
+    print("  Ignored toggles update data/ignored.txt.")
     print("  Press Ctrl-C to stop.\n")
     webbrowser.open(f"http://127.0.0.1:{actual_port}/")
     try:

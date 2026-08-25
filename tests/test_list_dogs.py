@@ -6,7 +6,7 @@ from pathlib import Path
 from unittest.mock import patch
 
 import list_dogs
-from discount import DiscountedList
+from ignore import IgnoredList
 from sites.base import Dog
 
 
@@ -92,55 +92,55 @@ class TestFormatTable:
         assert " | " in data_lines[0]
 
 
-class TestDiscountedMarker:
-    def test_table_marks_discounted_dog(self, tmp_path: Path):
-        discounted = DiscountedList(str(tmp_path))
-        discounted.add("https://example.org/bella")
+class TestIgnoredMarker:
+    def test_table_marks_ignored_dog(self, tmp_path: Path):
+        ignored = IgnoredList(str(tmp_path))
+        ignored.add("https://example.org/bella")
         dogs = [make_dog(), make_dog(name="Luna", url="https://example.org/luna")]
-        table = list_dogs.format_table([("Test", dogs)], discounted=discounted)
-        assert "https://example.org/bella  [D]" in table
+        table = list_dogs.format_table([("Test", dogs)], ignored=ignored)
+        assert "https://example.org/bella  [I]" in table
         assert "https://example.org/luna" in table
-        assert "https://example.org/luna  [D]" not in table
+        assert "https://example.org/luna  [I]" not in table
 
-    def test_table_marks_nothing_when_no_discounted(self, tmp_path: Path):
-        discounted = DiscountedList(str(tmp_path))
+    def test_table_marks_nothing_when_no_ignored(self, tmp_path: Path):
+        ignored = IgnoredList(str(tmp_path))
         dogs = [make_dog()]
-        table = list_dogs.format_table([("Test", dogs)], discounted=discounted)
-        assert "[D]" not in table
+        table = list_dogs.format_table([("Test", dogs)], ignored=ignored)
+        assert "[I]" not in table
 
-    def test_html_dims_and_badges_discounted(self, tmp_path: Path):
-        discounted = DiscountedList(str(tmp_path))
-        discounted.add("https://example.org/bella")
+    def test_html_dims_and_badges_ignored(self, tmp_path: Path):
+        ignored = IgnoredList(str(tmp_path))
+        ignored.add("https://example.org/bella")
         dogs = [make_dog(), make_dog(name="Luna", url="https://example.org/luna")]
-        html = list_dogs.format_html([("Test", dogs)], discounted=discounted)
-        assert "discounted" in html
+        html = list_dogs.format_html([("Test", dogs)], ignored=ignored)
+        assert "ignored" in html
         assert "line-through" in html
         assert "opacity:0.45" in html
 
-    def test_html_counts_new_vs_discounted(self, tmp_path: Path):
-        discounted = DiscountedList(str(tmp_path))
-        discounted.add("https://example.org/bella")
+    def test_html_counts_new_vs_ignored(self, tmp_path: Path):
+        ignored = IgnoredList(str(tmp_path))
+        ignored.add("https://example.org/bella")
         dogs = [make_dog(), make_dog(name="Luna", url="https://example.org/luna")]
-        html = list_dogs.format_html([("Test", dogs)], discounted=discounted)
-        assert "1 new / 1 discounted" in html
+        html = list_dogs.format_html([("Test", dogs)], ignored=ignored)
+        assert "1 new / 1 ignored" in html
 
     def test_html_has_toggle_button_per_card(self, tmp_path: Path):
-        discounted = DiscountedList(str(tmp_path))
-        discounted.add("https://example.org/bella")
+        ignored = IgnoredList(str(tmp_path))
+        ignored.add("https://example.org/bella")
         dogs = [make_dog(), make_dog(name="Luna", url="https://example.org/luna")]
-        html = list_dogs.format_html([("Test", dogs)], discounted=discounted)
+        html = list_dogs.format_html([("Test", dogs)], ignored=ignored)
         assert 'data-dog-url="https://example.org/bella"' in html
         assert 'data-dog-url="https://example.org/luna"' in html
         # two actual buttons (the JS also references the class via querySelector)
         assert html.count('class="disc-btn"') == 2
-        # discounted dog's button reads "Un-discount"
-        assert "Un-discount" in html
+        # ignored dog's button reads "Un-ignore"
+        assert "Un-ignore" in html
 
     def test_html_embeds_live_script(self, tmp_path: Path):
         dogs = [make_dog()]
-        html = list_dogs.format_html([("Test", dogs)], discounted=DiscountedList(str(tmp_path)))
+        html = list_dogs.format_html([("Test", dogs)], ignored=IgnoredList(str(tmp_path)))
         assert "<script>" in html
-        assert "/api/discounted/toggle" in html
+        assert "/api/ignored/toggle" in html
 
 
 class TestListCached:
@@ -257,7 +257,7 @@ class TestFormatHtml:
         dogs = [make_dog()]
         html = list_dogs.format_html([("Test", dogs)])
         # Should not load external CSS/JS/font files or CDN hosts.
-        # (Styles and the discount-toggle script are inline; profile links use
+        # (Styles and the ignore-toggle script are inline; profile links use
         # https which is expected.)
         for external in ["<script src=", "<link ", "@import url(", "googleapis", "cloudflare"]:
             assert external not in html, f"Found external resource: {external}"
