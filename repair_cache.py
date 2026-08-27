@@ -38,7 +38,6 @@ def _register() -> None:
     from sites.pro_dogs_direct import ProDogsDirectChecker
     from sites.raystede import RaystedeChecker
     from sites.rspca_brighton import RSPCABrightonChecker
-    from sites.rspca_leeds import RSPCALeedsChecker
     from sites.scsr import SCSRChecker
     from sites.south_east_dog_rescue import SouthEastDogRescueChecker
     from sites.spaniel_aid import SpanielAidChecker
@@ -54,7 +53,6 @@ def _register() -> None:
             "pro-dogs-direct.txt": (ProDogsDirectChecker, {}),
             "raystede.txt": (RaystedeChecker, {}),
             "rspca-brighton.txt": (RSPCABrightonChecker, {}),
-            "rspca-leeds.txt": (RSPCALeedsChecker, {}),
             "scsr.txt": (SCSRChecker, {}),
             "south-east-dog-rescue.txt": (SouthEastDogRescueChecker, {}),
             "spaniel-aid.txt": (SpanielAidChecker, {}),

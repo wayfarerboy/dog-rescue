@@ -30,7 +30,6 @@ from sites.paws2rescue import Paws2RescueChecker
 from sites.pro_dogs_direct import ProDogsDirectChecker
 from sites.raystede import RaystedeChecker
 from sites.rspca_brighton import RSPCABrightonChecker
-from sites.rspca_leeds import RSPCALeedsChecker
 from sites.scsr import SCSRChecker
 from sites.small_dog_rescue import SmallDogRescueChecker
 from sites.south_east_dog_rescue import SouthEastDogRescueChecker
@@ -81,7 +80,7 @@ def get_checkers(data_dir: str) -> list[SiteChecker]:
         ProDogsDirectChecker(data_dir),
         RaystedeChecker(data_dir),
         RSPCABrightonChecker(data_dir),
-        RSPCALeedsChecker(data_dir),
+        # RSPCALeedsChecker(data_dir),  # links broken; user isn't interested in RSPCA Leeds & Wakefield
         SCSRChecker(data_dir),
         SouthEastDogRescueChecker(data_dir),
         SpanielAidChecker(data_dir),
