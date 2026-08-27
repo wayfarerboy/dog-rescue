@@ -144,6 +144,22 @@ def dog_from_line(line: str) -> Dog:
     )
 
 
+def _empty_page() -> str:
+    return (
+        "<!DOCTYPE html>\n<html lang=\"en\">\n<head>"
+        "<meta charset=\"utf-8\">\n"
+        "<title>Available Dogs</title>\n</head>\n"
+        "<body style=\"margin:20px;font-family:-apple-system,"
+        "BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif\">\n"
+        "<p>No dogs found.</p>\n</body>\n</html>"
+    )
+
+
+def _is_showable(d: Dog, ignored: IgnoredList | None) -> bool:
+    """Whether a dog counts as "to show" (i.e. it isn't ignored)."""
+    return not (ignored and d.url in ignored)
+
+
 def format_html(
     results: list[tuple[str, list[Dog]]],
     ignored: IgnoredList | None = None,
@@ -151,16 +167,20 @@ def format_html(
     """Format dogs as a self-contained HTML document with card layout.
 
     Ignored dogs are dimmed, struck through, and labelled.
+    Rescue centres with no dog to show are omitted entirely (an ignored dog
+    does not count as "to show").
     """
     if not results:
-        return (
-            "<!DOCTYPE html>\n<html lang=\"en\">\n<head>"
-            "<meta charset=\"utf-8\">\n"
-            "<title>Available Dogs</title>\n</head>\n"
-            "<body style=\"margin:20px;font-family:-apple-system,"
-            "BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif\">\n"
-            "<p>No dogs found.</p>\n</body>\n</html>"
-        )
+        return _empty_page()
+
+    # Drop rescue centres whose dogs are all ignored (nothing to show).
+    results = [
+        (site, dogs)
+        for site, dogs in results
+        if any(_is_showable(d, ignored) for d in dogs)
+    ]
+    if not results:
+        return _empty_page()
 
     sections: list[str] = []
     for site_name, dogs in results:
@@ -288,8 +308,18 @@ def format_table(
 ) -> str:
     """Format dogs as a pipe-delimited table string.
 
-    Ignored dogs are prefixed with "[I]".
+    Ignored dogs are prefixed with "[I]". Rescue centres with no dog to
+    show (all their dogs ignored) are omitted.
     """
+    if not results:
+        return "No dogs found."
+
+    # Drop rescue centres whose dogs are all ignored (nothing to show).
+    results = [
+        (site, dogs)
+        for site, dogs in results
+        if any(_is_showable(d, ignored) for d in dogs)
+    ]
     if not results:
         return "No dogs found."
 

@@ -110,6 +110,10 @@ untick it to show everything again. Your choice is remembered per browser
 - **List only unseen (3 → 6):** hides every dog you've already ignored so
   only new ones remain.
 
+A rescue centre is **omitted entirely** from the terminal table and the HTML
+page if none of its dogs are left to show — i.e. every one of its dogs is
+ignored (an ignored dog doesn't count as "to show").
+
 Ignored status is stored locally in `data/ignored.txt`, keyed by the
 dog's **profile URL** (names aren't unique). A dog is treated as new again if
 its URL changes, or if you remove it via **Manage Ignored (4 → 2)**.

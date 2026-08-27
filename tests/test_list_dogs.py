@@ -337,3 +337,54 @@ def test_hide_ignored_restored_before_visibility_on_load() -> None:
         "refresh() computes card visibility, else ignored cards are shown "
         "on first load even though 'hide ignored' is set"
     )
+
+
+class TestOmitEmptyCentres:
+    """Rescue centres with no dog 'to show' (all their dogs ignored) are dropped."""
+
+    def _all_ignored(self, tmp_path: Path):
+        ignored = IgnoredList(str(tmp_path))
+        for url in ("https://ex.org/a", "https://ex.org/b"):
+            ignored.add(url)
+        dogs = [
+            make_dog(name="A", url="https://ex.org/a"),
+            make_dog(name="B", url="https://ex.org/b"),
+        ]
+        return ignored, dogs
+
+    def test_html_drops_all_ignored_centre(self, tmp_path: Path):
+        ignored, dogs = self._all_ignored(tmp_path)
+        kept = [make_dog(name="C", url="https://ex.org/c")]
+        html = list_dogs.format_html(
+            [("All Ignored Centre", dogs), ("Kept Centre", kept)], ignored=ignored
+        )
+        assert "All Ignored Centre" not in html
+        assert "Kept Centre" in html
+
+    def test_html_empty_page_when_every_centre_ignored(self, tmp_path: Path):
+        ignored, dogs = self._all_ignored(tmp_path)
+        html = list_dogs.format_html([("All Ignored Centre", dogs)], ignored=ignored)
+        assert "No dogs found" in html
+        assert "All Ignored Centre" not in html
+
+    def test_table_drops_all_ignored_centre(self, tmp_path: Path):
+        ignored, dogs = self._all_ignored(tmp_path)
+        kept = [make_dog(name="C", url="https://ex.org/c")]
+        table = list_dogs.format_table(
+            [("All Ignored Centre", dogs), ("Kept Centre", kept)], ignored=ignored
+        )
+        assert "https://ex.org/a" not in table
+        assert "https://ex.org/b" not in table
+        assert "https://ex.org/c" in table
+
+    def test_mixed_centre_is_kept(self, tmp_path: Path):
+        ignored = IgnoredList(str(tmp_path))
+        ignored.add("https://ex.org/a")
+        dogs = [
+            make_dog(name="A", url="https://ex.org/a"),
+            make_dog(name="C", url="https://ex.org/c"),
+        ]
+        html = list_dogs.format_html([("Mixed Centre", dogs)], ignored=ignored)
+        assert "Mixed Centre" in html
+        assert "https://ex.org/a" in html  # still rendered (dimmed) for the live toggle
+        assert "https://ex.org/c" in html
