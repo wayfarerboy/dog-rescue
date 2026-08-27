@@ -318,3 +318,22 @@ class TestListLive:
 
         # Cache file should not be touched (no _save_current, no overwrite)
         assert cache_file.read_text() == "old data\n"
+
+
+def test_hide_ignored_restored_before_visibility_on_load() -> None:
+    """Persisted 'hide ignored' must be applied before visibility is computed.
+
+    On first load the checkbox is restored from localStorage *after* the page
+    computes card visibility. Since applyVisibility() reads the checkbox, a
+    late restore means ignored cards stay visible even when the box ends up
+    checked. This guards the load-order regression in the embedded JS.
+    """
+    js = list_dogs._HTML_JS
+    # The persisted choice must be restored immediately before the load-time
+    # refresh that computes visibility. If they're reordered (or split apart)
+    # ignored cards are shown on first load even though 'hide ignored' is set.
+    assert "cb.checked = localStorage.getItem(KEY) === '1';\n    refresh(set);" in js, (
+        "checkbox state must be restored from localStorage BEFORE "
+        "refresh() computes card visibility, else ignored cards are shown "
+        "on first load even though 'hide ignored' is set"
+    )

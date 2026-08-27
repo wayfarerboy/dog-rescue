@@ -97,15 +97,17 @@ _HTML_JS = """<script>
       .then(function (set) { refresh(set); });
   }
   loadSet().then(function (set) {
+    // Restore the persisted choice BEFORE computing visibility, so first-load
+    // refresh() sees the checkbox state and hides ignored cards immediately.
+    var cb = document.getElementById('hideIgnored');
+    if (cb) cb.checked = localStorage.getItem(KEY) === '1';
     refresh(set);
     cards().forEach(function (c) {
       var url = c.getAttribute('data-dog-url');
       var btn = c.querySelector('.disc-btn');
       if (btn) btn.onclick = function () { toggle(url); };
     });
-    var cb = document.getElementById('hideIgnored');
     if (cb) {
-      cb.checked = localStorage.getItem(KEY) === '1';
       cb.onchange = function () {
         localStorage.setItem(KEY, cb.checked ? '1' : '0');
         refresh(set);
