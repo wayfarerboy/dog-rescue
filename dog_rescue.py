@@ -8,10 +8,12 @@ Cron:   0 8 * * * cd /path/to/dog-rescue && python3 dog_rescue.py
 
 from __future__ import annotations
 
+import contextlib
+import json
 import subprocess
 import sys
-from email.mime.multipart import MIMEMultipart
-from email.mime.text import MIMEText
+import urllib.error
+import urllib.request
 from pathlib import Path
 
 from breed_exclusion import BreedExclusionList, filter_dogs_by_breed
@@ -213,47 +215,65 @@ def main(dry_run: bool = False) -> None:
         content="\n".join(html_parts),
     )
 
-    # Multipart message
-    msg = MIMEMultipart("alternative")
-    msg["Subject"] = subject
-    msg["To"] = email
-    msg.attach(MIMEText(text_body, "plain"))
-    msg.attach(MIMEText(html_body, "html"))
+    api_key = env.get("SMTP2GO_API_KEY", "")
+    if not api_key:
+        print("Error: SMTP2GO_API_KEY not set in .env", file=sys.stderr)
+        sys.exit(1)
+    sender = env.get("SMTP2GO_SENDER", "").strip() or email
 
     if dry_run:
         print("\n── DRY RUN ──")
         print(f"To: {email}")
+        print(f"From: {sender}")
         print(f"Subject: {subject}")
-        print(f"\n{msg.as_string()}")
+        print(f"\n{text_body}")
         print(f"\nTotal dogs: {sum(len(dogs) for _, dogs in html_sites)}")
         return
 
+    payload = {
+        "api_key": api_key,
+        "to": [email],
+        "sender": sender,
+        "subject": subject,
+        "text_body": text_body,
+        "html_body": html_body,
+    }
     try:
-        subprocess.run(
-            ["msmtp", "-t"],
-            input=msg.as_string(),
-            text=True,
-            check=True,
-            timeout=30,
+        req = urllib.request.Request(
+            "https://api.smtp2go.com/v3/email/send",
+            data=json.dumps(payload).encode("utf-8"),
+            headers={"Content-Type": "application/json"},
+            method="POST",
         )
-        print("Email sent.")
-        # Refresh the permanently-served HTML so open pages pick up the new dogs.
-        # serve.py watches dogs.html and auto-reloads connected browsers on change.
-        try:
-            subprocess.run(
-                [sys.executable, str(SCRIPT_DIR / "list_dogs.py"), "--html", "--cached"],
-                cwd=SCRIPT_DIR,
-                timeout=120,
+        with urllib.request.urlopen(req, timeout=30) as resp:
+            result = json.loads(resp.read().decode("utf-8"))
+        data = result.get("data", {})
+        if data.get("succeeded", 0) < 1:
+            raise RuntimeError(
+                "; ".join(data.get("failures", [])) or "SMTP2Go accepted no recipients"
             )
-            print("Regenerated dogs.html.")
-        except Exception as exc:
-            print(f"Warning: could not regenerate dogs.html: {exc}", file=sys.stderr)
-    except FileNotFoundError:
-        print("Error: msmtp not found. Install with: brew install msmtp", file=sys.stderr)
+        print("Email sent.")
+    except urllib.error.HTTPError as exc:
+        detail = ""
+        with contextlib.suppress(Exception):
+            detail = exc.read().decode("utf-8")
+        print(f"Error sending email (HTTP {exc.code}): {detail}", file=sys.stderr)
         sys.exit(1)
-    except subprocess.CalledProcessError as exc:
+    except Exception as exc:
         print(f"Error sending email: {exc}", file=sys.stderr)
         sys.exit(1)
+
+    # Refresh the permanently-served HTML so open pages pick up the new dogs.
+    # serve.py watches dogs.html and auto-reloads connected browsers on change.
+    try:
+        subprocess.run(
+            [sys.executable, str(SCRIPT_DIR / "list_dogs.py"), "--html", "--cached"],
+            cwd=SCRIPT_DIR,
+            timeout=120,
+        )
+        print("Regenerated dogs.html.")
+    except Exception as exc:
+        print(f"Warning: could not regenerate dogs.html: {exc}", file=sys.stderr)
 
 
 if __name__ == "__main__":

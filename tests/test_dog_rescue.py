@@ -1,5 +1,6 @@
 import contextlib
-import subprocess
+import json
+import urllib.error
 from pathlib import Path
 from unittest.mock import patch
 
@@ -8,6 +9,25 @@ import pytest
 from distance_lookup import DistanceLookup
 from dog_rescue import load_env, main
 from sites.base import Dog
+
+
+class _FakeSMTP2GoResponse:
+    """Context-manager stand-in for urllib.request.urlopen that fakes a
+    successful SMTP2Go send response."""
+
+    def __init__(self, body=None):
+        self._body = body if body is not None else (
+            b'{"data":{"succeeded":1,"failed":0,"failures":[]}}'
+        )
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, *exc):
+        return False
+
+    def read(self):
+        return self._body
 
 
 class TestLoadEnv:
@@ -109,7 +129,9 @@ class TestMain:
     def test_sends_email_on_new_dogs(self, tmp_path: Path, monkeypatch):
         monkeypatch.setattr("dog_rescue.SCRIPT_DIR", tmp_path)
         monkeypatch.setattr("dog_rescue.DATA_DIR", tmp_path)
-        (tmp_path / ".env").write_text("EMAIL=test@example.com\n")
+        (tmp_path / ".env").write_text(
+            "EMAIL=test@example.com\nSMTP2GO_API_KEY=api-test\n"
+        )
 
         fake_dog = Dog(
             name="Bella",
@@ -132,20 +154,26 @@ class TestMain:
                   return_value="=== Section ===")
         )
         mock_run = stack.enter_context(patch("subprocess.run"))
+        mock_urlopen = stack.enter_context(
+            patch("urllib.request.urlopen", return_value=_FakeSMTP2GoResponse())
+        )
         try:
             main()
-            assert mock_run.call_count == 2  # msmtp + dogs.html regen
-            args, kwargs = mock_run.call_args_list[0]
-            assert args[0] == ["msmtp", "-t"]
-            assert "test@example.com" in kwargs["input"]
-            assert "=== Section ===" in kwargs["input"]
-            # dogs.html is regenerated so the served page picks up the new dogs
-            regen = mock_run.call_args_list[1]
+            # The email is sent via the SMTP2Go API, not msmtp/subprocess.
+            # subprocess.run is used only to regenerate dogs.html afterwards.
+            assert mock_run.call_count == 1
+            regen = mock_run.call_args_list[0]
             assert regen.args[0][-2:] == ["--html", "--cached"]
+            # Inspect the SMTP2Go request payload.
+            req = mock_urlopen.call_args.args[0]
+            body = json.loads(req.data.decode())
+            assert body["to"] == ["test@example.com"]
+            assert "=== Section ===" in body["text_body"]
+            assert body["html_body"]
         finally:
             stack.close()
 
-    def test_msmtp_not_found_exits(self, tmp_path: Path, monkeypatch):
+    def test_missing_smtp2go_api_key_exits(self, tmp_path: Path, monkeypatch):
         monkeypatch.setattr("dog_rescue.SCRIPT_DIR", tmp_path)
         monkeypatch.setattr("dog_rescue.DATA_DIR", tmp_path)
         (tmp_path / ".env").write_text("EMAIL=test@example.com\n")
@@ -170,9 +198,6 @@ class TestMain:
         stack.enter_context(
             patch("sites.all_dogs_matter.AllDogsMatterChecker.format_section",
                   return_value="X")
-        )
-        stack.enter_context(
-            patch("subprocess.run", side_effect=FileNotFoundError)
         )
         try:
             with pytest.raises(SystemExit) as exc:
@@ -181,10 +206,12 @@ class TestMain:
             stack.close()
         assert exc.value.code == 1
 
-    def test_subprocess_error_exits(self, tmp_path: Path, monkeypatch):
+    def test_smtp2go_http_error_exits(self, tmp_path: Path, monkeypatch):
         monkeypatch.setattr("dog_rescue.SCRIPT_DIR", tmp_path)
         monkeypatch.setattr("dog_rescue.DATA_DIR", tmp_path)
-        (tmp_path / ".env").write_text("EMAIL=test@example.com\n")
+        (tmp_path / ".env").write_text(
+            "EMAIL=test@example.com\nSMTP2GO_API_KEY=api-test\n"
+        )
 
         fake_dog = Dog(
             name="Bella",
@@ -207,9 +234,11 @@ class TestMain:
             patch("sites.all_dogs_matter.AllDogsMatterChecker.format_section",
                   return_value="X")
         )
+        http_err = urllib.error.HTTPError(
+            "https://api.smtp2go.com", 401, "Unauthorized", {}, None
+        )
         stack.enter_context(
-            patch("subprocess.run",
-                  side_effect=subprocess.CalledProcessError(1, "msmtp"))
+            patch("urllib.request.urlopen", side_effect=http_err)
         )
         try:
             with pytest.raises(SystemExit) as exc:
@@ -221,7 +250,9 @@ class TestMain:
     def test_checker_error_does_not_block_others(self, tmp_path: Path, monkeypatch):
         monkeypatch.setattr("dog_rescue.SCRIPT_DIR", tmp_path)
         monkeypatch.setattr("dog_rescue.DATA_DIR", tmp_path)
-        (tmp_path / ".env").write_text("EMAIL=test@example.com\n")
+        (tmp_path / ".env").write_text(
+            "EMAIL=test@example.com\nSMTP2GO_API_KEY=api-test\n"
+        )
 
         fake_dog = Dog(
             name="Bella",
@@ -250,10 +281,15 @@ class TestMain:
                   return_value="=== SCSR ===")
         )
         mock_run = stack.enter_context(patch("subprocess.run"))
+        mock_urlopen = stack.enter_context(
+            patch("urllib.request.urlopen", return_value=_FakeSMTP2GoResponse())
+        )
         try:
             main()
-            assert mock_run.call_count == 2  # msmtp + dogs.html regen
-            assert "=== SCSR ===" in mock_run.call_args_list[0].kwargs["input"]
+            assert mock_run.call_count == 1  # dogs.html regen only
+            req = mock_urlopen.call_args.args[0]
+            body = json.loads(req.data.decode())
+            assert "=== SCSR ===" in body["text_body"]
         finally:
             stack.close()
 
@@ -262,7 +298,7 @@ class TestMain:
         monkeypatch.setattr("dog_rescue.SCRIPT_DIR", tmp_path)
         monkeypatch.setattr("dog_rescue.DATA_DIR", tmp_path)
         (tmp_path / ".env").write_text(
-            "EMAIL=test@example.com\nMAX_DISTANCE_MILES=100\n"
+            "EMAIL=test@example.com\nSMTP2GO_API_KEY=api-test\nMAX_DISTANCE_MILES=100\n"
         )
 
         near_dog = Dog(
@@ -305,6 +341,9 @@ class TestMain:
                         side_effect=lambda center: {"Cardiff": 80.0, "Edinburgh": 320.0}.get(center))
         )
         stack.enter_context(patch("subprocess.run"))
+        stack.enter_context(
+            patch("urllib.request.urlopen", return_value=_FakeSMTP2GoResponse())
+        )
         try:
             main()
             # format_section called with only the near dog (far dog filtered out)
