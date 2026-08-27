@@ -151,12 +151,23 @@ def dog_from_line(line: str) -> Dog:
 
 def _empty_page() -> str:
     return (
-        "<!DOCTYPE html>\n<html lang=\"en\">\n<head>"
-        "<meta charset=\"utf-8\">\n"
-        "<title>Available Dogs</title>\n</head>\n"
-        "<body style=\"margin:20px;font-family:-apple-system,"
-        "BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif\">\n"
-        "<p>No dogs found.</p>\n"
+        "<!DOCTYPE html>\n"
+        '<html lang="en">\n'
+        "<head>\n"
+        '<meta charset="utf-8">\n'
+        '<meta name="viewport" content="width=device-width, initial-scale=1.0">\n'
+        "<title>Available Dogs</title>\n"
+        "</head>\n"
+        '<body style="margin:0;padding:24px;font-family:-apple-system,'
+        "BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;"
+        'background:#f5f5f5">\n'
+        '<div style="max-width:520px;margin:0 auto">\n'
+        '<h1 style="font-size:24px;font-weight:700;color:#222;'
+        'margin:0 0 8px 0">\U0001f43e No dogs found</h1>\n'
+        '<p style="font-size:15px;color:#555;line-height:1.5;margin:0">'
+        "We're checking rescue centres daily and this page auto-refreshes "
+        'when new dogs are available.</p>\n'
+        "</div>\n"
         "<script>"
         "if (window.EventSource) {"
         "  new EventSource('/events').addEventListener('reload', function () "
