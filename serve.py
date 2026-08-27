@@ -8,6 +8,11 @@ Run from the repo root (or via the CLI menu -> List Dogs -> Serve HTML):
 Starts a local HTTP server. Clicking **Ignore** / **Un-ignore** on a card
 persists the change to data/ignored.txt, so the page and the rest of the
 system stay in sync. Press Ctrl-C to stop.
+
+By default the page is opened in the local default browser. Pass
+`--no-browser` to skip that (e.g. when serving to other devices on your LAN
+and running this on a headless/SSH machine where the AppleEvent to open a
+browser can hang and time out).
 """
 
 from __future__ import annotations
@@ -15,6 +20,7 @@ from __future__ import annotations
 import json
 import socket
 import sys
+import threading
 import webbrowser
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
@@ -98,10 +104,33 @@ class Handler(BaseHTTPRequestHandler):
         sys.stderr.write(f"[{self.address_string()}] " + (fmt % args) + "\n")
 
 
+def _open_browser(url: str) -> None:
+    """Open the page in the default browser without blocking or crashing.
+
+    On macOS `webbrowser.open()` shells out to `osascript open location`, which
+    dispatches a GUI AppleEvent to the default browser. In a headless/SSH
+    context that call can hang for ~40s and then raise "AppleEvent timed out"
+    (-1712), stalling server startup. Run it detached so it can never block
+    the server, and swallow any error.
+    """
+
+    def _open() -> None:
+        try:
+            webbrowser.open(url)
+        except Exception:
+            pass
+
+    threading.Thread(target=_open, daemon=True).start()
+
+
 def main() -> None:
     host = DEFAULT_HOST
     port = DEFAULT_PORT
+    open_browser = True
     args = sys.argv[1:]
+    if "--no-browser" in args:
+        open_browser = False
+        args.remove("--no-browser")
     # Positional port:  python serve.py 9000
     if args and args[0].lstrip("-").isdigit():
         port = int(args[0])
@@ -120,8 +149,12 @@ def main() -> None:
     if host in ("0.0.0.0", ""):
         print(f"  LAN (others) : http://{_lan_ip()}:{actual_port}/")
     print("  Ignored toggles update data/ignored.txt.")
-    print("  Press Ctrl-C to stop.\n")
-    webbrowser.open(f"http://127.0.0.1:{actual_port}/")
+    if open_browser:
+        print("  Press Ctrl-C to stop.\n")
+        _open_browser(f"http://127.0.0.1:{actual_port}/")
+    else:
+        print("  (browser opening disabled: open the This machine / LAN URL yourself)")
+        print("  Press Ctrl-C to stop.\n")
     try:
         server.serve_forever()
     except KeyboardInterrupt:

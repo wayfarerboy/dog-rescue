@@ -232,13 +232,14 @@ def _list_dogs_menu():
 def _serve_html():
     """Serve dogs.html with live Ignore/Un-ignore toggles."""
     _header("Serve HTML (Live Ignore Toggles)")
-    print("  Starting a local server and opening your browser.")
+    print("  Starting a local server (browser not opened locally).")
+    print("  Open the 'This machine' or 'LAN' URL shown below in any browser.")
     print("  Click Ignore / Un-ignore on a card to update data/ignored.txt.")
     print("  Other devices on your network can open the LAN URL shown.")
     print("  Press Ctrl-C here to stop and return to the menu.\n")
     python = str(VENV_PYTHON) if VENV_PYTHON.exists() else sys.executable
     try:
-        subprocess.run([python, str(SCRIPT_DIR / "serve.py")])
+        subprocess.run([python, str(SCRIPT_DIR / "serve.py"), "--no-browser"])
     except KeyboardInterrupt:
         print("\n  Stopped.")
     _press_any_key()
