@@ -134,11 +134,14 @@ class TestMain:
         mock_run = stack.enter_context(patch("subprocess.run"))
         try:
             main()
-            mock_run.assert_called_once()
-            args, kwargs = mock_run.call_args
+            assert mock_run.call_count == 2  # msmtp + dogs.html regen
+            args, kwargs = mock_run.call_args_list[0]
             assert args[0] == ["msmtp", "-t"]
             assert "test@example.com" in kwargs["input"]
             assert "=== Section ===" in kwargs["input"]
+            # dogs.html is regenerated so the served page picks up the new dogs
+            regen = mock_run.call_args_list[1]
+            assert regen.args[0][-2:] == ["--html", "--cached"]
         finally:
             stack.close()
 
@@ -249,8 +252,8 @@ class TestMain:
         mock_run = stack.enter_context(patch("subprocess.run"))
         try:
             main()
-            mock_run.assert_called_once()
-            assert "=== SCSR ===" in mock_run.call_args.kwargs["input"]
+            assert mock_run.call_count == 2  # msmtp + dogs.html regen
+            assert "=== SCSR ===" in mock_run.call_args_list[0].kwargs["input"]
         finally:
             stack.close()
 

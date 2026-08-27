@@ -237,6 +237,17 @@ def main(dry_run: bool = False) -> None:
             timeout=30,
         )
         print("Email sent.")
+        # Refresh the permanently-served HTML so open pages pick up the new dogs.
+        # serve.py watches dogs.html and auto-reloads connected browsers on change.
+        try:
+            subprocess.run(
+                [sys.executable, str(SCRIPT_DIR / "list_dogs.py"), "--html", "--cached"],
+                cwd=SCRIPT_DIR,
+                timeout=120,
+            )
+            print("Regenerated dogs.html.")
+        except Exception as exc:
+            print(f"Warning: could not regenerate dogs.html: {exc}", file=sys.stderr)
     except FileNotFoundError:
         print("Error: msmtp not found. Install with: brew install msmtp", file=sys.stderr)
         sys.exit(1)

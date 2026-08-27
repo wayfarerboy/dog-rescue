@@ -97,6 +97,11 @@ _HTML_JS = """<script>
       .then(function (set) { refresh(set); });
   }
   loadSet().then(function (set) {
+    // Auto-reload when the served HTML is regenerated with newly found dogs.
+    if (window.EventSource) {
+      var es = new EventSource('/events');
+      es.addEventListener('reload', function () { window.location.reload(); });
+    }
     // Restore the persisted choice BEFORE computing visibility, so first-load
     // refresh() sees the checkbox state and hides ignored cards immediately.
     var cb = document.getElementById('hideIgnored');
@@ -151,7 +156,14 @@ def _empty_page() -> str:
         "<title>Available Dogs</title>\n</head>\n"
         "<body style=\"margin:20px;font-family:-apple-system,"
         "BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif\">\n"
-        "<p>No dogs found.</p>\n</body>\n</html>"
+        "<p>No dogs found.</p>\n"
+        "<script>"
+        "if (window.EventSource) {"
+        "  new EventSource('/events').addEventListener('reload', function () "
+        "    { window.location.reload(); });"
+        "}\n"
+        "</script>\n"
+        "</body>\n</html>"
     )
 
 

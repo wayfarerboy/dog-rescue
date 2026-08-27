@@ -18,10 +18,13 @@ browser can hang and time out).
 from __future__ import annotations
 
 import json
+import queue
 import socket
 import sys
 import threading
+import time
 import webbrowser
+from contextlib import suppress
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from urllib.parse import parse_qs, urlparse
@@ -33,6 +36,34 @@ DATA_DIR = SCRIPT_DIR / "data"
 HTML_PATH = SCRIPT_DIR / "dogs.html"
 DEFAULT_PORT = 8000
 DEFAULT_HOST = "0.0.0.0"  # serve on all interfaces so other LAN devices can reach us
+
+# SSE clients (queue per connection) + broadcast lock, for auto-reload on new dogs.
+_sse_clients: list[queue.Queue] = []
+_sse_lock = threading.Lock()
+
+
+def _broadcast_reload() -> None:
+    """Tell every connected page to reload (new dogs found)."""
+    with _sse_lock:
+        clients = list(_sse_clients)
+    for q in clients:
+        with suppress(queue.Full):
+            q.put_nowait(time.time_ns())
+
+
+def _watch_html() -> None:
+    """Poll dogs.html; when it changes (e.g. regenerated after a daily check)
+    broadcast a reload so open pages pick up newly found dogs automatically."""
+    last = HTML_PATH.stat().st_mtime_ns if HTML_PATH.exists() else None
+    while True:
+        time.sleep(1)
+        try:
+            mtime = HTML_PATH.stat().st_mtime_ns if HTML_PATH.exists() else None
+        except OSError:
+            mtime = None
+        if mtime != last:
+            last = mtime
+            _broadcast_reload()
 
 
 def _lan_ip() -> str:
@@ -75,6 +106,37 @@ class Handler(BaseHTTPRequestHandler):
         self.end_headers()
         self.wfile.write(body)
 
+    def _events(self) -> None:
+        """Server-Sent Events endpoint: broadcasts a reload when dogs.html changes."""
+        self.send_response(200)
+        self.send_header("Content-Type", "text/event-stream")
+        self.send_header("Cache-Control", "no-cache")
+        self.send_header("Connection", "keep-alive")
+        self.end_headers()
+        q: queue.Queue = queue.Queue(maxsize=16)
+        with _sse_lock:
+            _sse_clients.append(q)
+        try:
+            while True:
+                try:
+                    q.get(timeout=15)  # a reload signal arrived
+                except queue.Empty:
+                    try:
+                        self.wfile.write(b": ping\n\n")  # keepalive
+                        self.wfile.flush()
+                    except OSError:
+                        break
+                    continue
+                try:
+                    self.wfile.write(b"event: reload\ndata: 1\n\n")
+                    self.wfile.flush()
+                except OSError:
+                    break
+        finally:
+            with _sse_lock:
+                if q in _sse_clients:
+                    _sse_clients.remove(q)
+
     def do_GET(self) -> None:
         path = urlparse(self.path).path
         if path in ("/", "/index.html", "/dogs.html"):
@@ -82,6 +144,8 @@ class Handler(BaseHTTPRequestHandler):
         elif path == "/api/ignored":
             dl = IgnoredList(str(DATA_DIR))
             self._send_json({"urls": dl.urls()})
+        elif path == "/events":
+            self._events()
         elif path == "/favicon.ico":
             self.send_response(204)
             self.end_headers()
@@ -96,6 +160,9 @@ class Handler(BaseHTTPRequestHandler):
             dl = IgnoredList(str(DATA_DIR))
             now = dl.toggle(url)
             self._send_json({"url": url, "ignored": now})
+        elif parsed.path == "/reload":
+            _broadcast_reload()
+            self._send_json({"ok": True})
         else:
             self.send_response(404)
             self.end_headers()
@@ -143,6 +210,8 @@ def main() -> None:
 
     server = ThreadingHTTPServer((host, port), Handler)
     actual_port = server.server_address[1]
+
+    threading.Thread(target=_watch_html, daemon=True).start()
 
     print(f"\n  Serving {HTML_PATH.name}")
     print(f"  This machine : http://127.0.0.1:{actual_port}/")
